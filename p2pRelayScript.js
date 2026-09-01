@@ -1,33 +1,14 @@
-```javascript
-var params =
-    new URLSearchParams(
-        location.search
-    );
+var params = new URLSearchParams(location.search);
 
-var action =
-    params.get("action");
+var action = params.get("action");
+var room = params.get("room");
 
-var room =
-    params.get("room");
+var popupMode = !params.get("returnTo");
 
-var returnTo =
-    params.get("returnTo");
+var peerConnection = null;
+var outboundQueue = [];
 
-
-var popupMode =
-    !returnTo;
-
-
-var peerConnection =
-    null;
-
-
-var outboundQueue =
-    [];
-
-
-var connected =
-    false;
+var notified = false;
 
 
 /* ============================================================
@@ -36,18 +17,16 @@ var connected =
 
 function setStatus(msg) {
 
-    document.getElementById(
-        "status"
-    ).innerHTML = msg;
+    document.getElementById("status").innerHTML =
+        msg;
 
 }
 
 
 function setLobby(msg) {
 
-    document.getElementById(
-        "lobby"
-    ).textContent = msg;
+    document.getElementById("lobby").textContent =
+        msg;
 
 }
 
@@ -87,60 +66,13 @@ function notifyClient(extraParams) {
 
         );
 
-        return;
-
     }
-
-
-    if (!returnTo) {
-
-        return;
-
-    }
-
-
-    var dest =
-        new URL(
-            returnTo
-        );
-
-
-    dest.searchParams.set(
-        "room",
-        room
-    );
-
-
-    for (
-        var k in extraParams
-    ) {
-
-        dest.searchParams.set(
-            k,
-            extraParams[k]
-        );
-
-    }
-
-
-    setTimeout(
-
-        function() {
-
-            location.href =
-                dest.toString();
-
-        },
-
-        400
-
-    );
 
 }
 
 
 /* ============================================================
-   SEND SIGNALING DATA TO MAIN PAGE
+   SEND SIGNAL TO MAIN PAGE
    ============================================================ */
 
 function notifySignal(payload) {
@@ -173,7 +105,7 @@ function notifySignal(payload) {
 
 
 /* ============================================================
-   FORWARD SIGNAL TO OTHER USER
+   SEND SIGNAL THROUGH PEERJS
    ============================================================ */
 
 function forwardSignal(payload) {
@@ -200,15 +132,19 @@ function forwardSignal(payload) {
 }
 
 
-/* ============================================================
-   FLUSH WAITING SIGNALS
-   ============================================================ */
-
 function flushSignalQueue() {
 
+    if (
+        !peerConnection ||
+        !peerConnection.open
+    ) {
+
+        return;
+
+    }
+
+
     while (
-        peerConnection &&
-        peerConnection.open &&
         outboundQueue.length > 0
     ) {
 
@@ -222,7 +158,7 @@ function flushSignalQueue() {
 
 
 /* ============================================================
-   RECEIVE MESSAGES FROM MAIN PAGE
+   RECEIVE SIGNAL FROM MAIN PAGE
    ============================================================ */
 
 window.addEventListener(
@@ -262,10 +198,52 @@ window.addEventListener(
 
 
 /* ============================================================
-   CREATE ROOM
+   START
    ============================================================ */
 
-function runCreate() {
+if (
+    !action ||
+    !room
+) {
+
+    setStatus(
+        "Missing parameters."
+    );
+
+}
+
+else if (
+    action ===
+    "create"
+) {
+
+    runSignalCreate();
+
+}
+
+else if (
+    action ===
+    "join"
+) {
+
+    runSignalJoin();
+
+}
+
+else {
+
+    setStatus(
+        "Unknown action."
+    );
+
+}
+
+
+/* ============================================================
+   CREATE / HOST
+   ============================================================ */
+
+function runSignalCreate() {
 
     setStatus(
         '<span class="spinner">↻</span>'
@@ -275,23 +253,29 @@ function runCreate() {
     setLobby(
         "Lobby: " +
         room +
-        "\nCreating lobby..."
+        "\nConnecting to PeerJS..."
     );
 
 
     var peer =
-        new Peer(room);
+        new Peer(
+            room
+        );
 
 
     peer.on(
         "open",
+        function(id) {
 
-        function() {
+            setStatus(
+                ""
+            );
+
 
             setLobby(
                 "Lobby: " +
                 room +
-                "\nWaiting for another user..."
+                "\nLobby created"
             );
 
 
@@ -305,113 +289,82 @@ function runCreate() {
 
             });
 
-        }
-    );
 
-
-    peer.on(
-        "connection",
-
-        function(conn) {
-
-            peerConnection =
-                conn;
-
-
-            conn.on(
-                "open",
-
-                function() {
-
-                    connected =
-                        true;
-
-
-                    setStatus(
-                        ""
-                    );
-
-
-                    setLobby(
-                        "Lobby: " +
-                        room +
-                        "\nConnected!"
-                    );
-
-
-                    /*
-                     * Tell the main page that it is
-                     * the HOST and can begin WebRTC.
-                     */
-
-                    notifyClient({
-
-                        peerEvent:
-                            "connected_as_host",
-
-                        role:
-                            "host"
-
-                    });
-
-
-                    flushSignalQueue();
-
-                }
-            );
-
-
-            conn.on(
-                "data",
-
-                function(data) {
-
-                    notifySignal(
-                        data
-                    );
-
-                }
-            );
-
-
-            conn.on(
-                "close",
-
-                function() {
-
-                    connected =
-                        false;
+            peer.on(
+                "connection",
+                function(conn) {
 
                     peerConnection =
-                        null;
-
-                    notifyClient({
-
-                        peerEvent:
-                            "disconnected"
-
-                    });
-
-                }
-            );
+                        conn;
 
 
-            conn.on(
-                "error",
+                    conn.on(
+                        "open",
+                        function() {
 
-                function(err) {
+                            setLobby(
+                                "Lobby: " +
+                                room +
+                                "\nConnected"
+                            );
 
-                    notifyClient({
 
-                        peerEvent:
-                            "error",
+                            notifyClient({
 
-                        detail:
-                            err.message ||
-                            err.type ||
-                            "connection_error"
+                                peerEvent:
+                                    "connected_as_host",
 
-                    });
+                                role:
+                                    "host"
+
+                            });
+
+
+                            flushSignalQueue();
+
+                        }
+                    );
+
+
+                    conn.on(
+                        "data",
+                        function(data) {
+
+                            notifySignal(
+                                data
+                            );
+
+                        }
+                    );
+
+
+                    conn.on(
+                        "close",
+                        function() {
+
+                            peerConnection =
+                                null;
+
+                        }
+                    );
+
+
+                    conn.on(
+                        "error",
+                        function(err) {
+
+                            notifyClient({
+
+                                peerEvent:
+                                    "error",
+
+                                detail:
+                                    err.message
+
+                            });
+
+                        }
+                    );
 
                 }
             );
@@ -422,8 +375,62 @@ function runCreate() {
 
     peer.on(
         "error",
-
         function(err) {
+
+            /*
+             * "main" already exists.
+             *
+             * Become a joiner instead.
+             */
+
+            if (
+                err.type ===
+                "unavailable-id"
+            ) {
+
+                setStatus(
+                    '<span class="spinner">↻</span>'
+                );
+
+
+                setLobby(
+                    "Lobby: " +
+                    room +
+                    "\nJoining existing lobby..."
+                );
+
+
+                try {
+
+                    peer.destroy();
+
+                }
+
+                catch (e) {}
+
+
+                setTimeout(
+                    function() {
+
+                        runSignalJoin();
+
+                    },
+                    300
+                );
+
+
+                return;
+
+            }
+
+
+            setLobby(
+                "Lobby: " +
+                room +
+                "\nError: " +
+                err.message
+            );
+
 
             notifyClient({
 
@@ -431,13 +438,10 @@ function runCreate() {
                     "error",
 
                 detail:
-                    err.message ||
-                    err.type ||
-                    "unknown_error",
+                    err.message,
 
                 errorType:
-                    err.type ||
-                    ""
+                    err.type
 
             });
 
@@ -448,10 +452,10 @@ function runCreate() {
 
 
 /* ============================================================
-   JOIN EXISTING ROOM
+   JOIN / CLIENT
    ============================================================ */
 
-function runJoin() {
+function runSignalJoin() {
 
     setStatus(
         '<span class="spinner">↻</span>'
@@ -461,7 +465,7 @@ function runJoin() {
     setLobby(
         "Lobby: " +
         room +
-        "\nConnecting..."
+        "\nJoining existing lobby..."
     );
 
 
@@ -471,7 +475,6 @@ function runJoin() {
 
     peer.on(
         "open",
-
         function() {
 
             var conn =
@@ -484,14 +487,29 @@ function runJoin() {
                 conn;
 
 
-            var timer =
+            var timeout =
                 setTimeout(
-
                     function() {
 
                         if (
-                            !connected
+                            !conn.open
                         ) {
+
+                            try {
+
+                                peer.destroy();
+
+                            }
+
+                            catch (e) {}
+
+
+                            setLobby(
+                                "Lobby: " +
+                                room +
+                                "\nHost not found."
+                            );
+
 
                             notifyClient({
 
@@ -499,34 +517,24 @@ function runJoin() {
                                     "error",
 
                                 detail:
-                                    "connection_timeout"
+                                    "host_not_found"
 
                             });
-
-
-                            peer.destroy();
 
                         }
 
                     },
-
                     10000
-
                 );
 
 
             conn.on(
                 "open",
-
                 function() {
 
                     clearTimeout(
-                        timer
+                        timeout
                     );
-
-
-                    connected =
-                        true;
 
 
                     setStatus(
@@ -537,14 +545,9 @@ function runJoin() {
                     setLobby(
                         "Lobby: " +
                         room +
-                        "\nConnected!"
+                        "\nConnected"
                     );
 
-
-                    /*
-                     * Tell the main page that it is
-                     * the JOINER and can begin WebRTC.
-                     */
 
                     notifyClient({
 
@@ -565,7 +568,6 @@ function runJoin() {
 
             conn.on(
                 "data",
-
                 function(data) {
 
                     notifySignal(
@@ -578,22 +580,10 @@ function runJoin() {
 
             conn.on(
                 "close",
-
                 function() {
-
-                    connected =
-                        false;
 
                     peerConnection =
                         null;
-
-
-                    notifyClient({
-
-                        peerEvent:
-                            "disconnected"
-
-                    });
 
                 }
             );
@@ -601,11 +591,10 @@ function runJoin() {
 
             conn.on(
                 "error",
-
                 function(err) {
 
                     clearTimeout(
-                        timer
+                        timeout
                     );
 
 
@@ -615,13 +604,7 @@ function runJoin() {
                             "error",
 
                         detail:
-                            err.message ||
-                            err.type ||
-                            "connection_error",
-
-                        errorType:
-                            err.type ||
-                            ""
+                            err.message
 
                     });
 
@@ -634,8 +617,20 @@ function runJoin() {
 
     peer.on(
         "error",
-
         function(err) {
+
+            /*
+             * This is expected if the host
+             * disappeared before we connected.
+             */
+
+            setLobby(
+                "Lobby: " +
+                room +
+                "\nError: " +
+                err.message
+            );
+
 
             notifyClient({
 
@@ -643,13 +638,10 @@ function runJoin() {
                     "error",
 
                 detail:
-                    err.message ||
-                    err.type ||
-                    "unknown_error",
+                    err.message,
 
                 errorType:
-                    err.type ||
-                    ""
+                    err.type
 
             });
 
@@ -657,44 +649,3 @@ function runJoin() {
     );
 
 }
-
-
-/* ============================================================
-   CHECK PARAMETERS
-   ============================================================ */
-
-if (
-    !action ||
-    !room
-) {
-
-    setStatus(
-        "Missing parameters."
-    );
-
-}
-
-else if (
-    action === "create"
-) {
-
-    runCreate();
-
-}
-
-else if (
-    action === "join"
-) {
-
-    runJoin();
-
-}
-
-else {
-
-    setStatus(
-        "Unknown action."
-    );
-
-}
-```
