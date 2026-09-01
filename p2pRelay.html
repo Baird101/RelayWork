@@ -3,6 +3,7 @@
 
 <head>
     <title>Relay</title>
+
     <style>
         body {
             display: flex;
@@ -30,12 +31,20 @@
 </head>
 
 <body>
+
     <div id="wrap">
-        <div id="status"><span class="spinner">↻</span></div>
+
+        <div id="status">
+            <span class="spinner">↻</span>
+        </div>
+
         <div id="lobby"></div>
+
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script src="./p2pRelayScript.js"></script>
+
 </body>
 
 </html>
