@@ -1,48 +1,6 @@
 var params =
-new URLSearchParams(
-location.search
-);
+    new URLSearchParams(
 
-var action =
-params.get("action");
-
-var room =
-params.get("room");
-
-var peerConnection =
-null;
-
-var outboundQueue =
-[];
-
-var peer =
-null;
-
-/* ============================================================
-UI
-============================================================ */
-
-function setStatus(msg) {
-
- 
-document.getElementById(
-    "status"
-).innerHTML =
-    msg;
- 
-
-}
-
-function setLobby(msg) {
-
- 
-document.getElementById(
-    "lobby"
-).textContent =
-    msg;
- 
-
-}
 
 /* ============================================================
 MAIN PAGE COMMUNICATION
