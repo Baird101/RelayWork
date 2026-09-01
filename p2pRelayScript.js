@@ -1,4 +1,793 @@
-var params =
+var params = new URLSearchParams(location.search);
+
+var action =
+    params.get("action");
+
+var room =
+    params.get("room") || "main";
+
+
+/*
+ * ============================================================
+ * VARIABLES
+ * ============================================================
+ */
+
+var peer =
+    null;
+
+var hostConnection =
+    null;
+
+var connections =
+    [];
+
+var isHost =
+    action === "create";
+
+var joined =
+    0;
+
+
+/*
+ * ============================================================
+ * UI
+ * ============================================================
+ */
+
+function setStatus(msg) {
+
+    document.getElementById(
+        "status"
+    ).innerHTML = msg;
+
+}
+
+
+function setLobby(msg) {
+
+    document.getElementById(
+        "lobby"
+    ).textContent = msg;
+
+}
+
+
+/*
+ * ============================================================
+ * SEND MESSAGE BACK TO THE MAIN PAGE
+ * ============================================================
+ */
+
+function notifyClient(data) {
+
+    data = data || {};
+
+    data.type =
+        "relay_event";
+
+    data.room =
+        room;
+
+
+    if (window.opener) {
+
+        window.opener.postMessage(
+            data,
+            "*"
+        );
+
+    }
+
+}
+
+
+/*
+ * ============================================================
+ * SEND SIGNAL THROUGH THE RELAY
+ *
+ * This is only used while establishing WebRTC.
+ * ============================================================
+ */
+
+function sendSignal(payload) {
+
+    if (
+        hostConnection &&
+        hostConnection.open
+    ) {
+
+        hostConnection.send({
+
+            type:
+                "signal",
+
+            payload:
+                payload
+
+        });
+
+    }
+
+}
+
+
+/*
+ * ============================================================
+ * UPDATE HOST LOBBY
+ * ============================================================
+ */
+
+function updateHostLobby() {
+
+    setLobby(
+        "Lobby: " +
+        room +
+        "\nUsers connected: " +
+        (connections.length + 1)
+    );
+
+}
+
+
+/*
+ * ============================================================
+ * BROADCAST TO EVERY USER
+ * ============================================================
+ */
+
+function broadcast(data, except) {
+
+    var i;
+    var conn;
+
+
+    for (
+        i = 0;
+        i < connections.length;
+        i++
+    ) {
+
+        conn =
+            connections[i];
+
+
+        if (
+            conn === except
+        ) {
+
+            continue;
+
+        }
+
+
+        if (
+            conn &&
+            conn.open
+        ) {
+
+            conn.send(
+                data
+            );
+
+        }
+
+    }
+
+}
+
+
+/*
+ * ============================================================
+ * REMOVE CONNECTION
+ * ============================================================
+ */
+
+function removeConnection(conn) {
+
+    var i =
+        connections.indexOf(
+            conn
+        );
+
+
+    if (
+        i !== -1
+    ) {
+
+        connections.splice(
+            i,
+            1
+        );
+
+    }
+
+
+    if (isHost) {
+
+        updateHostLobby();
+
+    }
+
+}
+
+
+/*
+ * ============================================================
+ * HOST
+ * ============================================================
+ */
+
+function startHost() {
+
+    isHost =
+        true;
+
+
+    setStatus(
+        '<span class="spinner">↻</span> Creating lobby...'
+    );
+
+
+    peer =
+        new Peer(room);
+
+
+    peer.on(
+        "error",
+        function(err) {
+
+            setStatus(
+                "Error: " +
+                err.message
+            );
+
+            notifyClient({
+
+                peerEvent:
+                    "error",
+
+                detail:
+                    err.message
+
+            });
+
+        }
+    );
+
+
+    peer.on(
+        "open",
+        function() {
+
+            joined =
+                1;
+
+
+            updateHostLobby();
+
+
+            setStatus(
+                "Lobby created"
+            );
+
+
+            notifyClient({
+
+                peerEvent:
+                    "room_created",
+
+                role:
+                    "host"
+
+            });
+
+
+            /*
+             * A new user connects to the host.
+             */
+
+            peer.on(
+                "connection",
+                function(conn) {
+
+                    setupHostConnection(
+                        conn
+                    );
+
+                }
+            );
+
+        }
+    );
+
+}
+
+
+/*
+ * ============================================================
+ * SET UP A USER CONNECTING TO THE HOST
+ * ============================================================
+ */
+
+function setupHostConnection(conn) {
+
+    connections.push(
+        conn
+    );
+
+
+    updateHostLobby();
+
+
+    conn.on(
+        "open",
+        function() {
+
+            /*
+             * Tell the main page that
+             * the host is ready.
+             */
+
+            notifyClient({
+
+                peerEvent:
+                    "user_connected",
+
+                role:
+                    "host"
+
+            });
+
+
+            /*
+             * Tell this user how many
+             * people are currently here.
+             */
+
+            conn.send({
+
+                type:
+                    "lobby_count",
+
+                count:
+                    connections.length + 1
+
+            });
+
+        }
+    );
+
+
+    conn.on(
+        "data",
+        function(data) {
+
+            handleHostData(
+                conn,
+                data
+            );
+
+        }
+    );
+
+
+    conn.on(
+        "close",
+        function() {
+
+            removeConnection(
+                conn
+            );
+
+        }
+    );
+
+
+    conn.on(
+        "error",
+        function() {
+
+            removeConnection(
+                conn
+            );
+
+        }
+    );
+
+}
+
+
+/*
+ * ============================================================
+ * HOST RECEIVES DATA
+ * ============================================================
+ */
+
+function handleHostData(
+    conn,
+    data
+) {
+
+    if (
+        !data
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+     * WebRTC signaling.
+     */
+
+    if (
+        data.type ===
+        "signal"
+    ) {
+
+        /*
+         * The host normally doesn't need
+         * signaling once the connection
+         * is established.
+         */
+
+        return;
+
+    }
+
+
+    /*
+     * CHAT MESSAGE
+     */
+
+    if (
+        data.type ===
+        "chat"
+    ) {
+
+        /*
+         * Send the message to everybody
+         * EXCEPT the sender.
+         */
+
+        broadcast(
+            data,
+            conn
+        );
+
+    }
+
+
+    /*
+     * USER HELLO
+     */
+
+    else if (
+        data.type ===
+        "hello"
+    ) {
+
+        /*
+         * Tell everyone else that this
+         * person joined.
+         */
+
+        broadcast(
+            data,
+            conn
+        );
+
+    }
+
+}
+
+
+/*
+ * ============================================================
+ * JOINER
+ * ============================================================
+ */
+
+function startJoiner() {
+
+    isHost =
+        false;
+
+
+    setStatus(
+        '<span class="spinner">↻</span> Connecting...'
+    );
+
+
+    setLobby(
+        "Lobby: " +
+        room +
+        "\nConnecting to host..."
+    );
+
+
+    peer =
+        new Peer();
+
+
+    peer.on(
+        "error",
+        function(err) {
+
+            setStatus(
+                "Error: " +
+                err.message
+            );
+
+
+            notifyClient({
+
+                peerEvent:
+                    "error",
+
+                detail:
+                    err.message
+
+            });
+
+        }
+    );
+
+
+    peer.on(
+        "open",
+        function() {
+
+            /*
+             * Connect directly to the
+             * lobby creator.
+             */
+
+            hostConnection =
+                peer.connect(room);
+
+
+            hostConnection.on(
+                "open",
+                function() {
+
+                    setStatus(
+                        "Connected"
+                    );
+
+
+                    setLobby(
+                        "Lobby: " +
+                        room
+                    );
+
+
+                    notifyClient({
+
+                        peerEvent:
+                            "connected_as_joiner",
+
+                        role:
+                            "joiner"
+
+                    });
+
+
+                    /*
+                     * Tell the host our
+                     * name later through
+                     * the main page.
+                     */
+
+                }
+            );
+
+
+            hostConnection.on(
+                "data",
+                function(data) {
+
+                    /*
+                     * Forward everything
+                     * from the host to
+                     * the main page.
+                     */
+
+                    if (
+                        window.opener
+                    ) {
+
+                        window.opener.postMessage({
+
+                            type:
+                                "relay_data",
+
+                            room:
+                                room,
+
+                            data:
+                                data
+
+                        }, "*");
+
+                    }
+
+                }
+            );
+
+
+            hostConnection.on(
+                "close",
+                function() {
+
+                    setStatus(
+                        "Disconnected"
+                    );
+
+                }
+            );
+
+
+            hostConnection.on(
+                "error",
+                function(err) {
+
+                    notifyClient({
+
+                        peerEvent:
+                            "error",
+
+                        detail:
+                            err.message
+
+                    });
+
+                }
+            );
+
+        }
+    );
+
+}
+
+
+/*
+ * ============================================================
+ * MESSAGES FROM THE MAIN CHAT PAGE
+ * ============================================================
+ */
+
+window.addEventListener(
+    "message",
+    function(event) {
+
+        var msg =
+            event.data;
+
+
+        if (
+            !msg
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            msg.room !== room
+        ) {
+
+            return;
+
+        }
+
+
+        /*
+         * JOINER → HOST
+         */
+
+        if (
+            msg.type ===
+            "chat_send"
+        ) {
+
+            if (
+                hostConnection &&
+                hostConnection.open
+            ) {
+
+                hostConnection.send(
+                    msg.data
+                );
+
+            }
+
+        }
+
+
+        /*
+         * JOINER HELLO → HOST
+         */
+
+        else if (
+            msg.type ===
+            "hello_send"
+        ) {
+
+            if (
+                hostConnection &&
+                hostConnection.open
+            ) {
+
+                hostConnection.send(
+                    msg.data
+                );
+
+            }
+
+        }
+
+
+        /*
+         * HOST → EVERYONE
+         *
+         * This isn't normally needed because
+         * the host itself receives chat directly,
+         * but it allows the main page to tell
+         * the relay to broadcast something.
+         */
+
+        else if (
+            msg.type ===
+            "broadcast"
+        ) {
+
+            if (isHost) {
+
+                broadcast(
+                    msg.data
+                );
+
+            }
+
+        }
+
+    }
+);
+
+
+/*
+ * ============================================================
+ * START
+ * ============================================================
+ */
+
+if (
+    action === "create"
+) {
+
+    startHost();
+
+}
+
+else if (
+    action === "join"
+) {
+
+    startJoiner();
+
+}
+
+else {
+
+    setStatus(
+        "Missing action."
+    );
+
+}var params =
     new URLSearchParams(location.search);
 
 var action =
