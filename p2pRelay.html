@@ -3,6 +3,8 @@
 <html>
 
 <head>
+
+```
 <meta charset="utf-8">
 
 <meta name="viewport"
@@ -15,6 +17,24 @@
 
 <style>
 
+    html,
+    body {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        margin:
+            0;
+
+        padding:
+            0;
+
+    }
+
+
     body {
 
         display:
@@ -26,14 +46,11 @@
         align-items:
             center;
 
-        height:
-            100vh;
-
-        margin:
-            0;
-
         font-family:
             sans-serif;
+
+        background:
+            #f5f5f5;
 
     }
 
@@ -43,28 +60,72 @@
         text-align:
             center;
 
+        width:
+            100%;
+
+        padding:
+            20px;
+
+        box-sizing:
+            border-box;
+
+    }
+
+
+    #status {
+
+        font-size:
+            16px;
+
+        margin-bottom:
+            10px;
+
+    }
+
+
+    #lobby {
+
+        font-size:
+            13px;
+
+        color:
+            #666;
+
+        white-space:
+            pre-line;
+
     }
 
 </style>
+```
+
 </head>
 
 <body>
 
 <div id="wrap">
 
-    <div id="status">
-        Starting...
-    </div>
+```
+<div id="status">
+    Starting...
+</div>
 
-    <div id="lobby"></div>
+<div id="lobby"></div>
+```
 
 </div>
 
+<!--
+    PeerJS is only being used by this popup
+    for signaling.
+
+    Once the WebRTC connection is established,
+    the main page can close this window.
+-->
 
 <script
     src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js">
 </script>
-
 
 <script
     src="./p2pRelayScript.js">

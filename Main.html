@@ -68,9 +68,13 @@
 		}
 
 		#nameScreen {
-			background: linear-gradient(var(--angle),
+
+			background:
+				linear-gradient(
+					var(--angle),
 					rgb(87, 0, 0),
-					rgb(0, 0, 0));
+					rgb(0, 0, 0)
+				);
 
 			width:
 				100%;
@@ -312,17 +316,34 @@
 	<div id="wrapper">
 
 		<div id="chat">
+
 			<div id="nameScreen">
 
 				<h1>Sign up</h1>
 
-				<p>Enter the name you want other users to see.</p>
+				<p>
+					Enter the name you want other users to see.
+				</p>
 
-				<input id="nameInput" type="text" placeholder="Your name" maxlength="20" autocomplete="off">
+				<input
+					id="nameInput"
+					type="text"
+					placeholder="Your name"
+					maxlength="20"
+					autocomplete="off"
+				>
 
-				<button id="joinButton">Join Chat</button>
-				<p><br>Once a second window pops up do not close it otherwise it won't work</p>
+				<button id="joinButton">
+					Join Chat
+				</button>
+
+				<p>
+					<br>
+					A small connection window may appear while joining.
+				</p>
+
 			</div>
+
 
 			<div id="chatScreen">
 
@@ -334,7 +355,12 @@
 
 				<div id="inputArea">
 
-					<input id="messageInput" type="text" placeholder="Type a message..." autocomplete="off">
+					<input
+						id="messageInput"
+						type="text"
+						placeholder="Type a message..."
+						autocomplete="off"
+					>
 
 					<button id="sendButton">
 						Send
@@ -344,34 +370,149 @@
 
 			</div>
 
-
 		</div>
 
 	</div>
 
+
 	<script>
-		var nameScreen = document.getElementById("nameScreen");
 
-		var nameInput = document.getElementById("nameInput");
+		/* =====================================================
+		   BASIC ELEMENTS
+		   ===================================================== */
 
-		var joinButton = document.getElementById("joinButton");
+		var nameScreen =
+			document.getElementById("nameScreen");
 
-		var chatScreen = document.getElementById("chatScreen");
+		var nameInput =
+			document.getElementById("nameInput");
 
-		var myName = "";
+		var joinButton =
+			document.getElementById("joinButton");
 
-		var hasJoined = false;
+		var chatScreen =
+			document.getElementById("chatScreen");
 
-		var messages = document.getElementById("messages");
+		var messages =
+			document.getElementById("messages");
 
-		var messageInput = document.getElementById("messageInput");
+		var messageInput =
+			document.getElementById("messageInput");
 
-		var sendButton = document.getElementById("sendButton");
+		var sendButton =
+			document.getElementById("sendButton");
 
-		var statusElement = document.getElementById("status");
+		var statusElement =
+			document.getElementById("status");
 
 
-		function addMessage(name, text) {
+		/* =====================================================
+		   PLAYER DATA
+		   ===================================================== */
+
+		var myName =
+			"";
+
+		var hasJoined =
+			false;
+
+		var currentRoom =
+			"main";
+
+
+		/* =====================================================
+		   RELAY
+		   ===================================================== */
+
+		var localDev =
+			location.hostname === "localhost" ||
+			location.hostname === "127.0.0.1";
+
+
+		var RELAY =
+			localDev
+				? "./p2pRelay.html"
+				: "https://baird101.github.io/RelayWork/p2pRelay.html";
+
+
+		var signalWindow =
+			null;
+
+
+		var relayReady =
+			false;
+
+
+		var relayOpening =
+			false;
+
+
+		/* =====================================================
+		   WEBRTC CONNECTIONS
+		   ===================================================== */
+
+		/*
+		 * Every player gets their own RTCPeerConnection.
+		 *
+		 * Key:
+		 *     remote peer ID
+		 *
+		 * Value:
+		 *     connection information
+		 */
+
+		var peerConnections =
+			{};
+
+
+		/*
+		 * Data channels belonging to each player.
+		 */
+
+		var dataChannels =
+			{};
+
+
+		/*
+		 * Names belonging to each PeerJS ID.
+		 */
+
+		var playerNames =
+			{};
+
+
+		/*
+		 * Our PeerJS ID.
+		 */
+
+		var myPeerId =
+			"";
+
+
+		/*
+		 * Are we the lobby host?
+		 */
+
+		var isHost =
+			false;
+
+
+		/*
+		 * Messages waiting for the relay.
+		 */
+
+		var signalQueue =
+			[];
+
+
+		/* =====================================================
+		   MESSAGE DISPLAY
+		   ===================================================== */
+
+		function addMessage(
+			name,
+			text
+		) {
 
 			var div =
 				document.createElement(
@@ -391,7 +532,8 @@
 				"name";
 
 			nameSpan.textContent =
-				name + ": ";
+				name +
+				": ";
 
 
 			var textSpan =
@@ -423,7 +565,9 @@
 		}
 
 
-		function systemMessage(text) {
+		function systemMessage(
+			text
+		) {
 
 			var div =
 				document.createElement(
@@ -450,23 +594,14 @@
 
 		}
 
-		var localDev = location.hostname === "localhost" || location.hostname === "127.0.0.1";
 
+		/* =====================================================
+		   OPEN RELAY
+		   ===================================================== */
 
-		var RELAY = localDev ? "./p2pRelay.html" : "https://baird101.github.io/RelayWork/p2pRelay.html";
-
-
-		var currentRoom = "main";
-
-
-		var signalWindow = null;
-
-
-		var relayReady = false;
-
-		var relayOpening = false;
-
-		function openRelay(action) {
+		function openRelay(
+			action
+		) {
 
 			if (
 				relayOpening
@@ -500,15 +635,11 @@
 			);
 
 
-			/*
-			 * Give the popup a unique name.
-			 */
-
 			var popupName =
 				"chat-relay-" +
 				Math.random()
-				.toString(36)
-				.substring(2);
+					.toString(36)
+					.substring(2);
 
 
 			signalWindow =
@@ -548,6 +679,10 @@
 		}
 
 
+		/* =====================================================
+		   CLOSE RELAY
+		   ===================================================== */
+
 		function closeRelay() {
 
 			if (
@@ -559,7 +694,9 @@
 
 					signalWindow.close();
 
-				} catch (err) {}
+				}
+
+				catch (error) {}
 
 			}
 
@@ -573,11 +710,16 @@
 		}
 
 
+		/* =====================================================
+		   SEND NAME
+		   ===================================================== */
+
 		function sendNameToRelay() {
 
 			if (
 				!signalWindow ||
-				signalWindow.closed
+				signalWindow.closed ||
+				!relayReady
 			) {
 
 				return;
@@ -589,11 +731,17 @@
 
 				{
 
-					type: "set_name",
+					type:
+						"set_name",
 
-					room: currentRoom,
+					room:
+						currentRoom,
 
-					name: myName
+					name:
+						myName,
+
+					peerId:
+						myPeerId
 
 				},
 
@@ -604,16 +752,79 @@
 		}
 
 
-		window.addEventListener("message", function(event) {
+		/* =====================================================
+		   SEND SIGNAL THROUGH RELAY
+		   ===================================================== */
+
+		function sendSignal(
+			targetPeerId,
+			payload
+		) {
+
+			var message =
+				{
+
+					type:
+						"signal_send",
+
+					room:
+						currentRoom,
+
+					target:
+						targetPeerId,
+
+					from:
+						myPeerId,
+
+					payload:
+						payload
+
+				};
+
+
+			if (
+				signalWindow &&
+				!signalWindow.closed &&
+				relayReady
+			) {
+
+				try {
+
+					signalWindow.postMessage(
+						message,
+						"*"
+					);
+
+					return;
+
+				}
+
+				catch (error) {}
+
+			}
+
 
 			/*
-			 * Only accept messages from
-			 * our relay popup.
+			 * Relay isn't ready yet.
 			 */
+
+			signalQueue.push(
+				message
+			);
+
+		}
+
+
+		/* =====================================================
+		   FLUSH SIGNAL QUEUE
+		   ===================================================== */
+
+		function flushSignalQueue() {
 
 			if (
 				!signalWindow ||
-				event.source !== signalWindow
+				signalWindow.closed ||
+				!relayReady
 			) {
 
 				return;
@@ -621,20 +832,493 @@
 			}
 
 
-			var msg =
-				event.data || {};
+			while (
+				signalQueue.length > 0
+			) {
+
+				var message =
+					signalQueue.shift();
+
+
+				try {
+
+					signalWindow.postMessage(
+						message,
+						"*"
+					);
+
+				}
+
+				catch (error) {
+
+					signalQueue.unshift(
+						message
+					);
+
+					return;
+
+				}
+
+			}
+
+		}
+
+
+		/* =====================================================
+		   CREATE WEBRTC CONNECTION
+		   ===================================================== */
+
+		function createConnection(
+			remotePeerId,
+			makeOffer
+		) {
 
 			/*
-			 * Debug: log all messages received
+			 * Don't create the same connection twice.
 			 */
-			console.log(
-				"Main received from relay:",
-				msg
-			);
 
 			if (
-				msg.room &&
-				msg.room !== currentRoom
+				peerConnections[
+					remotePeerId
+				]
+			) {
+
+				return peerConnections[
+					remotePeerId
+				];
+
+			}
+
+
+			var pc =
+				new RTCPeerConnection({
+
+					iceServers: [
+
+						{
+
+							urls:
+								"stun:stun.l.google.com:19302"
+
+						}
+
+					]
+
+				});
+
+
+			peerConnections[
+				remotePeerId
+			] =
+				pc;
+
+
+			/*
+			 * ICE candidates.
+			 */
+
+			pc.onicecandidate =
+				function(event) {
+
+					if (
+						event.candidate
+					) {
+
+						sendSignal(
+
+							remotePeerId,
+
+							{
+
+								kind:
+									"candidate",
+
+								candidate:
+									event.candidate.toJSON()
+
+							}
+
+						);
+
+					}
+
+				};
+
+
+			/*
+			 * Connection state.
+			 */
+
+			pc.onconnectionstatechange =
+				function() {
+
+					if (
+						pc.connectionState ===
+						"connected"
+					) {
+
+						statusElement.textContent =
+							"Connected players: " +
+							countConnections();
+
+
+						/*
+						 * Once the direct WebRTC
+						 * connection works, we no
+						 * longer need the relay for
+						 * THIS connection.
+						 */
+
+						if (
+							!isHost
+						) {
+
+							closeRelay();
+
+						}
+
+					}
+
+
+					if (
+						pc.connectionState ===
+						"failed" ||
+						pc.connectionState ===
+						"closed"
+					) {
+
+						removeConnection(
+							remotePeerId
+						);
+
+					}
+
+				};
+
+
+			/*
+			 * Joiner receives a DataChannel
+			 * from the host.
+			 */
+
+			pc.ondatachannel =
+				function(event) {
+
+					setupDataChannel(
+
+						remotePeerId,
+
+						event.channel
+
+					);
+
+				};
+
+
+			/*
+			 * Host creates the DataChannel.
+			 */
+
+			if (
+				makeOffer
+			) {
+
+				var channel =
+					pc.createDataChannel(
+						"chat"
+					);
+
+
+				setupDataChannel(
+
+					remotePeerId,
+
+					channel
+
+				);
+
+
+				pc.createOffer()
+
+					.then(
+
+						function(offer) {
+
+							return pc.setLocalDescription(
+								offer
+							);
+
+						}
+
+					)
+
+					.then(
+
+						function() {
+
+							sendSignal(
+
+								remotePeerId,
+
+								{
+
+									kind:
+										"offer",
+
+									description:
+										pc.localDescription
+
+								}
+
+							);
+
+						}
+
+					)
+
+					.catch(
+
+						function(error) {
+
+							systemMessage(
+								"WebRTC error: " +
+								error.message
+							);
+
+						}
+
+					);
+
+			}
+
+
+			return pc;
+
+		}
+
+
+		/* =====================================================
+		   DATA CHANNEL
+		   ===================================================== */
+
+		function setupDataChannel(
+			remotePeerId,
+			channel
+		) {
+
+			dataChannels[
+				remotePeerId
+			] =
+				channel;
+
+
+			channel.onopen =
+				function() {
+
+					statusElement.textContent =
+						"Connected players: " +
+						countConnections();
+
+				};
+
+
+			channel.onmessage =
+				function(event) {
+
+					var data =
+						event.data;
+
+
+					if (
+						typeof data ===
+						"string"
+					) {
+
+						try {
+
+							data =
+								JSON.parse(
+									data
+								);
+
+						}
+
+						catch (error) {
+
+							return;
+
+						}
+
+					}
+
+
+					if (
+						data.type ===
+						"chat"
+					) {
+
+						addMessage(
+
+							data.name ||
+							playerNames[
+								remotePeerId
+							] ||
+							"Unknown",
+
+							data.text ||
+							""
+
+						);
+
+					}
+
+
+					if (
+						data.type ===
+						"user_joined"
+					) {
+
+						if (
+							data.peerId
+						) {
+
+							playerNames[
+								data.peerId
+							] =
+								data.name ||
+								"Unknown";
+
+						}
+
+					}
+
+
+					if (
+						data.type ===
+						"user_left"
+					) {
+
+						systemMessage(
+
+							(
+								data.name ||
+								"Someone"
+							) +
+							" left the lobby."
+
+						);
+
+					}
+
+				};
+
+
+			channel.onclose =
+				function() {
+
+					removeConnection(
+						remotePeerId
+					);
+
+				};
+
+		}
+
+
+		/* =====================================================
+		   REMOVE CONNECTION
+		   ===================================================== */
+
+		function removeConnection(
+			peerId
+		) {
+
+			if (
+				peerConnections[
+					peerId
+				]
+			) {
+
+				try {
+
+					peerConnections[
+						peerId
+					].close();
+
+				}
+
+				catch (error) {}
+
+			}
+
+
+			delete peerConnections[
+				peerId
+			];
+
+
+			delete dataChannels[
+				peerId
+			];
+
+
+			delete playerNames[
+				peerId
+			];
+
+
+			statusElement.textContent =
+				"Connected players: " +
+				countConnections();
+
+		}
+
+
+		/* =====================================================
+		   COUNT CONNECTIONS
+		   ===================================================== */
+
+		function countConnections() {
+
+			var count =
+				0;
+
+
+			for (
+				var id in dataChannels
+			) {
+
+				if (
+					dataChannels[id] &&
+					dataChannels[id].readyState ===
+					"open"
+				) {
+
+					count++;
+
+				}
+
+			}
+
+
+			return count +
+				(isHost ? 1 : 0);
+
+		}
+
+
+		/* =====================================================
+		   HANDLE REMOTE SIGNAL
+		   ===================================================== */
+
+		function handleRemoteSignal(
+			fromPeerId,
+			payload
+		) {
+
+			if (
+				!payload ||
+				!fromPeerId
 			) {
 
 				return;
@@ -642,167 +1326,470 @@
 			}
 
 
+			var pc =
+				peerConnections[
+					fromPeerId
+				];
+
+
 			if (
-				msg.type === "relay_event" &&
-				msg.peerEvent === "lobby_exists"
+				!pc
 			) {
 
-				statusElement.textContent =
-					"Lobby found. Joining...";
+				pc =
+					createConnection(
+						fromPeerId,
+						false
+					);
+
+			}
 
 
-				closeRelay();
+			/*
+			 * OFFER
+			 */
 
+			if (
+				payload.kind ===
+				"offer"
+			) {
 
-				setTimeout(
+				pc.setRemoteDescription(
+
+					new RTCSessionDescription(
+						payload.description
+					)
+
+				)
+
+				.then(
 
 					function() {
 
-						openRelay(
-							"join"
+						return pc.createAnswer();
+
+					}
+
+				)
+
+				.then(
+
+					function(answer) {
+
+						return pc.setLocalDescription(
+							answer
 						);
 
-					},
+					}
 
-					250
+				)
+
+				.then(
+
+					function() {
+
+						sendSignal(
+
+							fromPeerId,
+
+							{
+
+								kind:
+									"answer",
+
+								description:
+									pc.localDescription
+
+							}
+
+						);
+
+					}
+
+				)
+
+				.catch(
+
+					function(error) {
+
+						systemMessage(
+							"Signal error: " +
+							error.message
+						);
+
+					}
 
 				);
 
-
-				return;
-
 			}
 
-			if (
-				msg.type === "relay_event" &&
-				msg.peerEvent === "connected"
+
+			/*
+			 * ANSWER
+			 */
+
+			else if (
+				payload.kind ===
+				"answer"
 			) {
 
-				relayReady =
-					true;
+				pc.setRemoteDescription(
 
+					new RTCSessionDescription(
+						payload.description
+					)
 
-				window.chatPeerId =
-					msg.peerId;
+				)
 
+				.catch(
 
-				statusElement.textContent =
-					"Connected";
+					function(error) {
 
+						systemMessage(
+							"Answer error: " +
+							error.message
+						);
 
-				sendNameToRelay();
+					}
 
-
-				systemMessage(
-					"You connected to the lobby."
 				);
-
-
-				return;
 
 			}
 
-			if (
-				msg.type === "relay_event" &&
-				msg.peerEvent === "user_joined"
+
+			/*
+			 * ICE CANDIDATE
+			 */
+
+			else if (
+				payload.kind ===
+				"candidate"
 			) {
 
 				if (
-					msg.name
+					pc.remoteDescription
 				) {
+
+					pc.addIceCandidate(
+
+						new RTCIceCandidate(
+							payload.candidate
+						)
+
+					)
+
+					.catch(
+						function() {}
+					);
+
+				}
+
+			}
+
+		}
+
+
+		/* =====================================================
+		   RELAY MESSAGES
+		   ===================================================== */
+
+		window.addEventListener(
+
+			"message",
+
+			function(event) {
+
+				if (
+					!signalWindow ||
+					event.source !==
+					signalWindow
+				) {
+
+					return;
+
+				}
+
+
+				var msg =
+					event.data ||
+					{};
+
+
+				if (
+					msg.room &&
+					msg.room !==
+					currentRoom
+				) {
+
+					return;
+
+				}
+
+
+				/* =============================================
+				   RELAY CONNECTED
+				   ============================================= */
+
+				if (
+					msg.type ===
+					"relay_event" &&
+					msg.peerEvent ===
+					"connected"
+				) {
+
+					relayReady =
+						true;
+
+
+					myPeerId =
+						msg.peerId ||
+						myPeerId;
+
+
+					sendNameToRelay();
+
+					flushSignalQueue();
+
+
+					return;
+
+				}
+
+
+				/* =============================================
+				   ROOM CREATED
+				   ============================================= */
+
+				if (
+					msg.type ===
+					"relay_event" &&
+					msg.peerEvent ===
+					"room_created"
+				) {
+
+					relayReady =
+						true;
+
+					isHost =
+						true;
+
+
+					myPeerId =
+						msg.peerId ||
+						myPeerId;
+
+
+					sendNameToRelay();
+
+					flushSignalQueue();
+
+
+					statusElement.textContent =
+						"Lobby created. Waiting for players...";
+
+
+					systemMessage(
+						"You created the lobby."
+					);
+
+
+					return;
+
+				}
+
+
+				/* =============================================
+				   LOBBY EXISTS
+				   ============================================= */
+
+				if (
+					msg.type ===
+					"relay_event" &&
+					msg.peerEvent ===
+					"lobby_exists"
+				) {
+
+					statusElement.textContent =
+						"Lobby found. Joining...";
+
+
+					closeRelay();
+
+
+					setTimeout(
+
+						function() {
+
+							openRelay(
+								"join"
+							);
+
+						},
+
+						250
+
+					);
+
+
+					return;
+
+				}
+
+
+				/* =============================================
+				   NEW PLAYER
+				   ============================================= */
+
+				if (
+					msg.type ===
+					"relay_event" &&
+					msg.peerEvent ===
+					"user_joined"
+				) {
+
+					if (
+						msg.peerId
+					) {
+
+						playerNames[
+							msg.peerId
+						] =
+							msg.name ||
+							"Unknown";
+
+
+						systemMessage(
+
+							(
+								msg.name ||
+								"Someone"
+							) +
+							" joined the lobby."
+
+						);
+
+
+						/*
+						 * HOST creates a direct
+						 * WebRTC connection to
+						 * the new player.
+						 */
+
+						if (
+							isHost
+						) {
+
+							createConnection(
+								msg.peerId,
+								true
+							);
+
+						}
+
+					}
+
+
+					return;
+
+				}
+
+
+				/* =============================================
+				   SIGNAL DATA
+				   ============================================= */
+
+				if (
+					msg.type ===
+					"signal_data"
+				) {
+
+					handleRemoteSignal(
+
+						msg.from,
+
+						msg.payload
+
+					);
+
+
+					return;
+
+				}
+
+
+				/* =============================================
+				   PLAYER LEFT
+				   ============================================= */
+
+				if (
+					msg.type ===
+					"relay_event" &&
+					msg.peerEvent ===
+					"user_left"
+				) {
+
+					if (
+						msg.peerId
+					) {
+
+						systemMessage(
+
+							(
+								msg.name ||
+								"Someone"
+							) +
+							" left the lobby."
+
+						);
+
+
+						removeConnection(
+							msg.peerId
+						);
+
+					}
+
+
+					return;
+
+				}
+
+
+				/* =============================================
+				   RELAY ERROR
+				   ============================================= */
+
+				if (
+					msg.type ===
+					"relay_event" &&
+					msg.peerEvent ===
+					"error"
+				) {
+
+					statusElement.textContent =
+						"Relay error";
+
 
 					systemMessage(
 
-						msg.name +
-						" joined the lobby."
+						msg.detail ||
+						"Unknown relay error."
 
 					);
 
-				}
 
-				return;
-
-			}
-
-
-			if (
-				msg.type === "relay_event" &&
-				msg.peerEvent === "user_left"
-			) {
-
-				if (
-					msg.name
-				) {
-
-					systemMessage(
-
-						msg.name +
-						" left the lobby."
-
-					);
+					return;
 
 				}
 
-				return;
-
 			}
 
-			if (
-				msg.type === "chat"
-			) {
-
-				/*
-				 * The sender already displayed
-				 * their own message.
-				 *
-				 * Therefore ignore our own
-				 * copy from the relay.
-				 */
-
-				if (
-					msg.senderId !==
-					window.chatPeerId
-				) {
-
-					addMessage(
-
-						msg.name ||
-						"Unknown",
-
-						msg.text ||
-						""
-
-					);
-
-				}
-
-				return;
-
-			}
-
-			if (
-				msg.type === "relay_event" &&
-				msg.peerEvent === "error"
-			) {
-
-				statusElement.textContent =
-					"Relay error";
+		);
 
 
-				systemMessage(
-
-					msg.detail ||
-					"Unknown relay error."
-
-				);
-
-
-				return;
-
-			}
-
-		});
-
+		/* =====================================================
+		   SEND CHAT
+		   ===================================================== */
 
 		function sendChat() {
 
@@ -811,46 +1798,17 @@
 
 
 			if (
-				text === ""
+				text ===
+				""
 			) {
 
 				return;
 
 			}
-
-
-			if (
-				!signalWindow ||
-				signalWindow.closed ||
-				!relayReady
-			) {
-
-				systemMessage(
-					"Not connected yet."
-				);
-
-				return;
-
-			}
-
-
-			var message = {
-
-				type: "chat_send",
-
-				room: currentRoom,
-
-				name: myName,
-
-				text: text,
-
-				senderId: window.chatPeerId
-
-			};
 
 
 			/*
-			 * Display our own message immediately.
+			 * Display our own message.
 			 */
 
 			addMessage(
@@ -859,14 +1817,56 @@
 			);
 
 
+			var message = {
+
+				type:
+					"chat",
+
+				name:
+					myName,
+
+				text:
+					text
+
+			};
+
+
 			/*
-			 * Send it to the relay.
+			 * Send directly to every
+			 * WebRTC connection.
 			 */
 
-			signalWindow.postMessage(
-				message,
-				"*"
-			);
+			for (
+				var peerId in dataChannels
+			) {
+
+				var channel =
+					dataChannels[
+						peerId
+					];
+
+
+				if (
+					channel &&
+					channel.readyState ===
+					"open"
+				) {
+
+					try {
+
+						channel.send(
+							JSON.stringify(
+								message
+							)
+						);
+
+					}
+
+					catch (error) {}
+
+				}
+
+			}
 
 
 			messageInput.value =
@@ -877,20 +1877,28 @@
 		}
 
 
-		sendButton.onclick = sendChat;
+		sendButton.onclick =
+			sendChat;
 
 
-		messageInput.onkeydown = function(event) {
+		messageInput.onkeydown =
+			function(event) {
 
-			if (
-				event.key === "Enter"
-			) {
+				if (
+					event.key ===
+					"Enter"
+				) {
 
-				sendChat();
+					sendChat();
 
-			}
+				}
 
-		};
+			};
+
+
+		/* =====================================================
+		   START LOBBY
+		   ===================================================== */
 
 		function joinLobby() {
 
@@ -899,6 +1907,10 @@
 
 
 			relayReady =
+				false;
+
+
+			isHost =
 				false;
 
 
@@ -913,6 +1925,10 @@
 		}
 
 
+		/* =====================================================
+		   ENTER LOBBY
+		   ===================================================== */
+
 		function enterLobby() {
 
 			var name =
@@ -920,7 +1936,8 @@
 
 
 			if (
-				name === ""
+				name ===
+				""
 			) {
 
 				nameInput.focus();
@@ -960,20 +1977,24 @@
 		}
 
 
-		joinButton.onclick = enterLobby;
+		joinButton.onclick =
+			enterLobby;
 
 
-		nameInput.onkeydown = function(event) {
+		nameInput.onkeydown =
+			function(event) {
 
-			if (
-				event.key === "Enter"
-			) {
+				if (
+					event.key ===
+					"Enter"
+				) {
 
-				enterLobby();
+					enterLobby();
 
-			}
+				}
 
-		};
+			};
+
 	</script>
 
 </body>
