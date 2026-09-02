@@ -453,9 +453,8 @@
 		var localDev = location.hostname === "localhost" || location.hostname === "127.0.0.1";
 
 
-		var RELAY = localDev
-			? "./p2pRelay.html"
-			: "https://baird101.github.io/RelayWork/p2pRelay.html";
+		var RELAY = localDev ? "./p2pRelay.html" : "https://baird101.github.io/RelayWork/p2pRelay.html";
+
 
 		var currentRoom = "main";
 
@@ -683,6 +682,10 @@
 					true;
 
 
+				window.chatPeerId =
+					msg.peerId;
+
+
 				statusElement.textContent =
 					"Connected";
 
@@ -816,7 +819,11 @@
 			}
 
 
-			if (!signalWindow || signalWindow.closed || !relayReady) {
+			if (
+				!signalWindow ||
+				signalWindow.closed ||
+				!relayReady
+			) {
 
 				systemMessage(
 					"Not connected yet."
@@ -846,17 +853,24 @@
 			 * Display our own message immediately.
 			 */
 
-			addMessage(myName, text);
+			addMessage(
+				myName,
+				text
+			);
 
 
 			/*
 			 * Send it to the relay.
 			 */
 
-			signalWindow.postMessage(message, "*");
+			signalWindow.postMessage(
+				message,
+				"*"
+			);
 
 
-			messageInput.value = "";
+			messageInput.value =
+				"";
 
 			messageInput.focus();
 
@@ -880,14 +894,22 @@
 
 		function joinLobby() {
 
-			currentRoom = "main";
+			currentRoom =
+				"main";
 
-			relayReady = false;
+
+			relayReady =
+				false;
+
 
 			statusElement.textContent =
-				"Finding lobby...";
+				"Creating lobby...";
 
-			openRelay("create");
+
+			openRelay(
+				"create"
+			);
+
 		}
 
 
@@ -952,7 +974,6 @@
 			}
 
 		};
-
 	</script>
 
 </body>
