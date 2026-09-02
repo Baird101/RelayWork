@@ -14,28 +14,19 @@ null;
 
 /*
 
-* IMPORTANT:
+* EVERY connection gets its own
+* entry in this array.
 *
-* There is NO longer a single
-* "peerConnection".
+* This is what allows:
 *
-* The host can have:
+* User 1
+* User 2
+* User 3
+* User 4
+* User 5
+* ...
 *
-* ```
-  connections[0]
-  ```
-* ```
-  connections[1]
-  ```
-* ```
-  connections[2]
-  ```
-* ```
-  ...
-  ```
-*
-* So any number of users can be
-* connected at once.
+* to all be connected at once.
   */
 
 var connections =
@@ -85,7 +76,8 @@ function notifyClient(
 peerEvent,
 role,
 detail,
-name
+name,
+peerId
 ) {
 
 ```
@@ -119,7 +111,10 @@ window.opener.postMessage(
             detail || "",
 
         name:
-            name || ""
+            name || "",
+
+        peerId:
+            peerId || ""
 
     },
 
@@ -131,29 +126,58 @@ window.opener.postMessage(
 }
 
 /* ============================================================
-SEND DATA TO MAIN PAGE
+ADD CONNECTION
 ============================================================ */
 
-function notifyClientData(data) {
-
-```
-if (
-    !window.opener ||
-    window.opener.closed
+function addConnection(
+connection
 ) {
 
-    return;
+```
+connections.push({
+
+    connection:
+        connection,
+
+    name:
+        "",
+
+    peerId:
+        connection.peer
+
+});
+```
+
+}
+
+/* ============================================================
+FIND CONNECTION
+============================================================ */
+
+function findConnection(
+connection
+) {
+
+```
+for (
+    var i = 0;
+    i < connections.length;
+    i++
+) {
+
+    if (
+        connections[i].connection ===
+        connection
+    ) {
+
+        return connections[i];
+
+    }
 
 }
 
 
-window.opener.postMessage(
-
-    data,
-
-    "*"
-
-);
+return null;
 ```
 
 }
@@ -167,22 +191,35 @@ connection
 ) {
 
 ```
-var index =
-    connections.indexOf(
-        connection
-    );
-
-
-if (
-    index !== -1
+for (
+    var i = 0;
+    i < connections.length;
+    i++
 ) {
 
-    connections.splice(
-        index,
-        1
-    );
+    if (
+        connections[i].connection ===
+        connection
+    ) {
+
+        var user =
+            connections[i];
+
+
+        connections.splice(
+            i,
+            1
+        );
+
+
+        return user;
+
+    }
 
 }
+
+
+return null;
 ```
 
 }
@@ -192,8 +229,7 @@ BROADCAST
 ============================================================ */
 
 function broadcast(
-data,
-except
+data
 ) {
 
 ```
@@ -204,16 +240,7 @@ for (
 ) {
 
     var connection =
-        connections[i];
-
-
-    if (
-        connection === except
-    ) {
-
-        continue;
-
-    }
+        connections[i].connection;
 
 
     if (
@@ -246,14 +273,20 @@ connection
 ) {
 
 ```
-/*
- * Add this user to the list.
- */
-
-connections.push(
+addConnection(
     connection
 );
 
+
+var user =
+    findConnection(
+        connection
+    );
+
+
+/* ========================================================
+   CONNECTION OPENED
+   ======================================================== */
 
 connection.on(
 
@@ -273,37 +306,29 @@ connection.on(
          */
 
         notifyClient(
+
             "connected",
+
             action === "create"
                 ? "host"
-                : "joiner"
+                : "joiner",
+
+            "",
+
+            "",
+
+            peer.id
+
         );
-
-
-        /*
-         * For the host, this means
-         * a NEW person joined.
-         *
-         * The joiner does not need
-         * this notification because
-         * they already know they joined.
-         */
-
-        if (
-            action === "create"
-        ) {
-
-            notifyClient(
-                "user_joined",
-                "host"
-            );
-
-        }
 
     }
 
 );
 
+
+/* ========================================================
+   DATA
+   ======================================================== */
 
 connection.on(
 
@@ -311,56 +336,75 @@ connection.on(
 
     function(data) {
 
-        /*
-         * Data arriving here is a
-         * chat message from a user.
-         */
+        if (!data) {
+
+            return;
+
+        }
+
+
+        /* =================================================
+           CHAT MESSAGE
+           ================================================= */
 
         if (
-            data &&
-            data.type === "chat_send"
+            data.type ===
+            "chat_send"
         ) {
+
+            /*
+             * Remember who this connection belongs to.
+             */
+
+            if (user) {
+
+                user.name =
+                    data.name || "";
+
+            }
+
 
             var message = {
 
                 type:
                     "chat",
 
+                room:
+                    room,
+
                 name:
-                    data.name,
+                    data.name || "Unknown",
 
                 text:
-                    data.text,
+                    data.text || "",
 
-                fromRelay:
-                    true
+                senderId:
+                    data.senderId || ""
 
             };
 
 
             /*
-             * Send to EVERY other user.
+             * Send the message to EVERYONE.
+             *
+             * This includes the sender.
+             *
+             * The sender ignores their copy
+             * using senderId.
              */
 
             broadcast(
-                message,
-                connection
+                message
             );
 
 
             /*
-             * Also send it back to the
-             * sender's main page through
-             * the popup.
-             *
-             * The main page ignores this
-             * because it already displayed
-             * its own message.
+             * Tell the main page that
+             * somebody has joined once
+             * we know their name.
              */
 
-            notifyClientData(
-                message
-            );
+            return;
 
         }
 
@@ -369,15 +413,20 @@ connection.on(
 );
 
 
+/* ========================================================
+   CLOSE
+   ======================================================== */
+
 connection.on(
 
     "close",
 
     function() {
 
-        removeConnection(
-            connection
-        );
+        var user =
+            removeConnection(
+                connection
+            );
 
 
         setStatus(
@@ -387,14 +436,27 @@ connection.on(
 
 
         notifyClient(
+
             "user_left",
-            null
+
+            null,
+
+            "",
+
+            user
+                ? user.name
+                : ""
+
         );
 
     }
 
 );
 
+
+/* ========================================================
+   ERROR
+   ======================================================== */
 
 connection.on(
 
@@ -421,7 +483,7 @@ connection.on(
 }
 
 /* ============================================================
-HOST / CREATE LOBBY
+CREATE LOBBY
 ============================================================ */
 
 function createLobby() {
@@ -441,8 +503,8 @@ setLobby(
 try {
 
     /*
-     * The permanent lobby ID
-     * is "main".
+     * The FIRST person creates
+     * the permanent "main" ID.
      */
 
     peer =
@@ -455,10 +517,14 @@ try {
 catch (error) {
 
     notifyClient(
+
         "error",
+
         null,
+
         error.message ||
         "Could not start PeerJS."
+
     );
 
     return;
@@ -466,10 +532,9 @@ catch (error) {
 }
 
 
-/*
- * PeerJS server accepted
- * our "main" ID.
- */
+/* ========================================================
+   PEER OPEN
+   ======================================================== */
 
 peer.on(
 
@@ -483,15 +548,26 @@ peer.on(
 
 
         setLobby(
+
             "Lobby: " +
             id +
             "\nWaiting for users..."
+
         );
 
 
         notifyClient(
+
             "room_created",
-            "host"
+
+            "host",
+
+            "",
+
+            "",
+
+            id
+
         );
 
     }
@@ -499,18 +575,25 @@ peer.on(
 );
 
 
-/*
- * THIS IS THE IMPORTANT PART.
- *
- * Every user who connects gets
- * their own DataConnection.
- */
+/* ========================================================
+   NEW USER
+   ======================================================== */
 
 peer.on(
 
     "connection",
 
     function(connection) {
+
+        /*
+         * IMPORTANT:
+         *
+         * DO NOT overwrite a single
+         * peerConnection variable.
+         *
+         * Every connection is kept
+         * in the connections array.
+         */
 
         setupConnection(
             connection
@@ -521,16 +604,19 @@ peer.on(
 );
 
 
-/*
- * Another person may already
- * own the "main" ID.
- */
+/* ========================================================
+   PEER ERROR
+   ======================================================== */
 
 peer.on(
 
     "error",
 
     function(error) {
+
+        /*
+         * Someone already owns "main".
+         */
 
         if (
             error.type ===
@@ -548,9 +634,17 @@ peer.on(
 
 
             notifyClient(
+
                 "lobby_exists",
+
                 "joiner",
-                error.message
+
+                error.message,
+
+                "",
+
+                ""
+
             );
 
 
@@ -593,7 +687,7 @@ peer.on(
 }
 
 /* ============================================================
-JOIN EXISTING LOBBY
+JOIN LOBBY
 ============================================================ */
 
 function joinLobby() {
@@ -613,8 +707,7 @@ setLobby(
 try {
 
     /*
-     * Joiners get their own random
-     * PeerJS ID.
+     * Joiners get a random PeerJS ID.
      */
 
     peer =
@@ -625,10 +718,14 @@ try {
 catch (error) {
 
     notifyClient(
+
         "error",
+
         null,
+
         error.message ||
         "Could not start PeerJS."
+
     );
 
     return;
@@ -636,23 +733,48 @@ catch (error) {
 }
 
 
+/* ========================================================
+   JOINER PEER OPEN
+   ======================================================== */
+
 peer.on(
 
     "open",
 
-    function() {
+    function(id) {
 
         setLobby(
+
             "Connected to PeerJS.\n" +
             "Joining " +
             room +
             "..."
+
+        );
+
+
+        /*
+         * Tell the main page its ID.
+         */
+
+        notifyClient(
+
+            "connected",
+
+            "joiner",
+
+            "",
+
+            "",
+
+            id
+
         );
 
 
         /*
          * Connect to the permanent
-         * "main" peer.
+         * main lobby.
          */
 
         var connection =
@@ -676,6 +798,10 @@ peer.on(
 
 );
 
+
+/* ========================================================
+   JOINER ERROR
+   ======================================================== */
 
 peer.on(
 
@@ -730,6 +856,7 @@ setStatus(
     "PeerJS failed to load."
 );
 
+
 setLobby(
     "The PeerJS library could not be loaded."
 );
@@ -746,6 +873,7 @@ else if (
 setStatus(
     "Missing parameters."
 );
+
 
 setLobby(
     "Missing action or room."
