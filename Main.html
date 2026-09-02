@@ -566,10 +566,6 @@ var relayOpening =
     false;
 
 
-var chatPeerId =
-    "";
-
-
 /* ============================================================
    OPEN RELAY
    ============================================================ */
@@ -610,6 +606,10 @@ function openRelay(
     );
 
 
+    /*
+     * Give the popup a unique name.
+     */
+
     var popupName =
         "chat-relay-" +
         Math.random()
@@ -640,25 +640,13 @@ function openRelay(
         statusElement.textContent =
             "Popup blocked";
 
-
         systemMessage(
             "Allow popups for this site, then reload."
         );
 
-
         return false;
 
     }
-
-
-    /*
-     * Do NOT assume the relay is ready yet.
-     *
-     * The popup has to load PeerJS first.
-     */
-
-    statusElement.textContent =
-        "Opening relay...";
 
 
     return true;
@@ -691,7 +679,6 @@ function closeRelay() {
     signalWindow =
         null;
 
-
     relayReady =
         false;
 
@@ -699,61 +686,39 @@ function closeRelay() {
 
 
 /* ============================================================
-   SEND MESSAGE TO RELAY
+   SEND NAME TO RELAY
    ============================================================ */
 
-function sendRelayMessage(
-    data
-) {
+function sendNameToRelay() {
 
     if (
         !signalWindow ||
         signalWindow.closed
     ) {
 
-        return false;
+        return;
 
     }
 
 
-    try {
+    signalWindow.postMessage(
 
-        signalWindow.postMessage(
-            data,
-            "*"
-        );
+        {
 
-        return true;
+            type:
+                "set_name",
 
-    }
+            room:
+                currentRoom,
 
-    catch (error) {
+            name:
+                myName
 
-        return false;
+        },
 
-    }
+        "*"
 
-}
-
-
-/* ============================================================
-   SEND NAME
-   ============================================================ */
-
-function sendNameToRelay() {
-
-    return sendRelayMessage({
-
-        type:
-            "set_name",
-
-        room:
-            currentRoom,
-
-        name:
-            myName
-
-    });
+    );
 
 }
 
@@ -770,7 +735,7 @@ window.addEventListener(
 
         /*
          * Only accept messages from
-         * our current relay popup.
+         * our relay popup.
          */
 
         if (
@@ -788,37 +753,14 @@ window.addEventListener(
 
 
         /*
-         * Ignore another room.
+         * Ignore messages for
+         * another room.
          */
 
         if (
             msg.room &&
             msg.room !== currentRoom
         ) {
-
-            return;
-
-        }
-
-
-        /* ====================================================
-           RELAY READY
-           ==================================================== */
-
-        if (
-            msg.type === "relay_ready"
-        ) {
-
-            statusElement.textContent =
-                "Connecting to lobby...";
-
-
-            /*
-             * The relay is now ready.
-             * It has already started PeerJS.
-             *
-             * We don't need to send anything here.
-             */
 
             return;
 
@@ -837,14 +779,8 @@ window.addEventListener(
             relayReady =
                 true;
 
-
-            chatPeerId =
-                msg.peerId ||
-                "";
-
-
             window.chatPeerId =
-                chatPeerId;
+                msg.peerId;
 
 
             statusElement.textContent =
@@ -855,6 +791,10 @@ window.addEventListener(
                 "Lobby created. Waiting for other users."
             );
 
+
+            /*
+             * Tell the relay who we are.
+             */
 
             sendNameToRelay();
 
@@ -877,17 +817,8 @@ window.addEventListener(
                 "Lobby found. Joining...";
 
 
-            /*
-             * Destroy the old CREATE popup.
-             */
-
             closeRelay();
 
-
-            /*
-             * Give the browser a moment to
-             * finish closing the old popup.
-             */
 
             setTimeout(
 
@@ -899,7 +830,7 @@ window.addEventListener(
 
                 },
 
-                300
+                250
 
             );
 
@@ -922,13 +853,8 @@ window.addEventListener(
                 true;
 
 
-            chatPeerId =
-                msg.peerId ||
-                "";
-
-
             window.chatPeerId =
-                chatPeerId;
+                msg.peerId;
 
 
             statusElement.textContent =
@@ -938,16 +864,9 @@ window.addEventListener(
             sendNameToRelay();
 
 
-            if (
-                msg.role ===
-                "joiner"
-            ) {
-
-                systemMessage(
-                    "You joined the lobby."
-                );
-
-            }
+            systemMessage(
+                "You joined the lobby."
+            );
 
 
             return;
@@ -977,7 +896,6 @@ window.addEventListener(
 
             }
 
-
             return;
 
         }
@@ -1005,7 +923,6 @@ window.addEventListener(
 
             }
 
-
             return;
 
         }
@@ -1020,13 +937,16 @@ window.addEventListener(
         ) {
 
             /*
-             * We already display our own
-             * message immediately.
+             * The sender already displayed
+             * their own message.
+             *
+             * Therefore ignore our own
+             * copy from the relay.
              */
 
             if (
                 msg.senderId !==
-                chatPeerId
+                window.chatPeerId
             ) {
 
                 addMessage(
@@ -1041,14 +961,13 @@ window.addEventListener(
 
             }
 
-
             return;
 
         }
 
 
         /* ====================================================
-           PEERJS ERROR
+           ERROR
            ==================================================== */
 
         if (
@@ -1063,35 +982,8 @@ window.addEventListener(
             systemMessage(
 
                 msg.detail ||
-                "Unknown PeerJS error."
+                "Unknown relay error."
 
-            );
-
-
-            return;
-
-        }
-
-
-        /* ====================================================
-           PEERJS DISCONNECTED
-           ==================================================== */
-
-        if (
-            msg.type === "relay_event" &&
-            msg.peerEvent === "disconnected"
-        ) {
-
-            relayReady =
-                false;
-
-
-            statusElement.textContent =
-                "Relay disconnected";
-
-
-            systemMessage(
-                "The lobby relay disconnected from PeerJS."
             );
 
 
@@ -1128,14 +1020,13 @@ function sendChat() {
         signalWindow.closed ||
         !relayReady
     ) {
-
+    
         systemMessage(
             "Not connected yet."
         );
-
-
+    
         return;
-
+    
     }
 
 
@@ -1154,13 +1045,13 @@ function sendChat() {
             text,
 
         senderId:
-            chatPeerId
+            window.chatPeerId
 
     };
 
 
     /*
-     * Display our own message.
+     * Display our own message immediately.
      */
 
     addMessage(
@@ -1170,31 +1061,43 @@ function sendChat() {
 
 
     /*
-     * Give the relay the message.
+     * Send it to the relay.
      */
 
-    if (
-        !sendRelayMessage(
-            message
-        )
-    ) {
-
-        systemMessage(
-            "Could not send message."
-        );
-
-        return;
-
-    }
+    signalWindow.postMessage(
+        message,
+        "*"
+    );
 
 
     messageInput.value =
         "";
 
-
     messageInput.focus();
 
 }
+
+
+/* ============================================================
+   SEND BUTTON
+   ============================================================ */
+
+sendButton.onclick =
+    sendChat;
+
+
+messageInput.onkeydown =
+    function(event) {
+
+        if (
+            event.key === "Enter"
+        ) {
+
+            sendChat();
+
+        }
+
+    };
 
 
 /* ============================================================
@@ -1211,12 +1114,8 @@ function joinLobby() {
         false;
 
 
-    chatPeerId =
-        "";
-
-
     statusElement.textContent =
-        "Creating lobby: main";
+        "Creating lobby...";
 
 
     openRelay(

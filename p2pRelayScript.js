@@ -1053,57 +1053,9 @@ function joinLobby() {
 
         function() {
 
-            peer.on(
-
-    "disconnected",
-
-    function() {
-
-        setStatus(
-            "Reconnecting to PeerJS..."
-        );
-
-
-         notifyClient(
-
-                "disconnected",
-
-                null,
-
-                "PeerJS disconnected."
-
+            setStatus(
+                "Reconnecting to PeerJS..."
             );
-
-
-            setTimeout(
-
-                function() {
-
-                    if (
-                        peer &&
-                        !peer.destroyed &&
-                        peer.disconnected
-                    ) {
-
-                        try {
-
-                            peer.reconnect();
-
-                        }
-
-                        catch (error) {}
-
-                    }
-
-                },
-
-                1000
-
-            );
-
-        }
-
-    );
 
 
             setTimeout(
