@@ -38,7 +38,7 @@ UI
 
 function setStatus(text) {
 
-```
+
 var element =
     document.getElementById("status");
 
@@ -48,13 +48,13 @@ if (element) {
         text;
 
 }
-```
+
 
 }
 
 function setLobby(text) {
 
-```
+
 var element =
     document.getElementById("lobby");
 
@@ -64,7 +64,7 @@ if (element) {
         text;
 
 }
-```
+
 
 }
 
@@ -80,7 +80,7 @@ name,
 peerId
 ) {
 
-```
+
 if (
     !window.opener ||
     window.opener.closed
@@ -121,7 +121,7 @@ window.opener.postMessage(
     "*"
 
 );
-```
+
 
 }
 
@@ -133,7 +133,7 @@ function addConnection(
 connection
 ) {
 
-```
+
 connections.push({
 
     connection:
@@ -146,7 +146,7 @@ connections.push({
         connection.peer
 
 });
-```
+
 
 }
 
@@ -158,7 +158,7 @@ function findConnection(
 connection
 ) {
 
-```
+
 for (
     var i = 0;
     i < connections.length;
@@ -178,7 +178,7 @@ for (
 
 
 return null;
-```
+
 
 }
 
@@ -190,7 +190,7 @@ function removeConnection(
 connection
 ) {
 
-```
+
 for (
     var i = 0;
     i < connections.length;
@@ -220,7 +220,7 @@ for (
 
 
 return null;
-```
+
 
 }
 
@@ -232,7 +232,7 @@ function broadcast(
 data
 ) {
 
-```
+
 for (
     var i = 0;
     i < connections.length;
@@ -260,7 +260,7 @@ for (
     }
 
 }
-```
+
 
 }
 
@@ -272,7 +272,7 @@ function setupConnection(
 connection
 ) {
 
-```
+
 addConnection(
     connection
 );
@@ -478,7 +478,7 @@ connection.on(
     }
 
 );
-```
+
 
 }
 
@@ -488,7 +488,7 @@ CREATE LOBBY
 
 function createLobby() {
 
-```
+
 setStatus(
     "Connecting to PeerJS..."
 );
@@ -682,7 +682,7 @@ peer.on(
     }
 
 );
-```
+
 
 }
 
@@ -692,7 +692,7 @@ JOIN LOBBY
 
 function joinLobby() {
 
-```
+
 setStatus(
     "Joining lobby..."
 );
@@ -838,7 +838,7 @@ peer.on(
     }
 
 );
-```
+
 
 }
 
@@ -851,7 +851,7 @@ typeof Peer ===
 "undefined"
 ) {
 
-```
+
 setStatus(
     "PeerJS failed to load."
 );
@@ -860,7 +860,7 @@ setStatus(
 setLobby(
     "The PeerJS library could not be loaded."
 );
-```
+
 
 }
 
@@ -869,7 +869,7 @@ else if (
 !room
 ) {
 
-```
+
 setStatus(
     "Missing parameters."
 );
@@ -878,7 +878,7 @@ setStatus(
 setLobby(
     "Missing action or room."
 );
-```
+
 
 }
 
@@ -886,9 +886,9 @@ else if (
 action === "create"
 ) {
 
-```
+
 createLobby();
-```
+
 
 }
 
@@ -896,18 +896,18 @@ else if (
 action === "join"
 ) {
 
-```
+
 joinLobby();
-```
+
 
 }
 
 else {
 
-```
+
 setStatus(
     "Unknown action."
 );
-```
+
 
 }
