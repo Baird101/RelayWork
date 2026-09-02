@@ -1,292 +1,301 @@
 var params =
-    new URLSearchParams(
-        window.location.search
-    );
+new URLSearchParams(
+window.location.search
+);
 
 var action =
-    params.get("action");
+params.get("action");
 
 var room =
-    params.get("room");
+params.get("room");
 
 var peer =
-    null;
+null;
 
-var peerConnections =
-    [];
+/*
 
-var outboundQueue =
-    [];
+* IMPORTANT:
+*
+* There is NO longer a single
+* "peerConnection".
+*
+* The host can have:
+*
+* ```
+  connections[0]
+  ```
+* ```
+  connections[1]
+  ```
+* ```
+  connections[2]
+  ```
+* ```
+  ...
+  ```
+*
+* So any number of users can be
+* connected at once.
+  */
 
+var connections =
+[];
 
 /* ============================================================
-   UI
-   ============================================================ */
+UI
+============================================================ */
 
 function setStatus(text) {
 
-    var element =
-        document.getElementById("status");
+```
+var element =
+    document.getElementById("status");
 
-    if (element) {
+if (element) {
 
-        element.innerHTML =
-            text;
-
-    }
+    element.textContent =
+        text;
 
 }
+```
 
+}
 
 function setLobby(text) {
 
-    var element =
-        document.getElementById("lobby");
+```
+var element =
+    document.getElementById("lobby");
 
-    if (element) {
+if (element) {
 
-        element.textContent =
-            text;
+    element.textContent =
+        text;
 
-    }
+}
+```
 
 }
 
-
 /* ============================================================
-   SEND EVENT TO MAIN CHAT
-   ============================================================ */
+SEND EVENT TO MAIN PAGE
+============================================================ */
 
 function notifyClient(
-    peerEvent,
-    role,
-    detail,
-    errorType
+peerEvent,
+role,
+detail,
+name
 ) {
 
-    if (
-        !window.opener ||
-        window.opener.closed
-    ) {
+```
+if (
+    !window.opener ||
+    window.opener.closed
+) {
 
-        return;
-
-    }
-
-
-    window.opener.postMessage(
-
-        {
-
-            type:
-                "relay_event",
-
-            room:
-                room,
-
-            peerEvent:
-                peerEvent,
-
-            role:
-                role || null,
-
-            detail:
-                detail || "",
-
-            errorType:
-                errorType || ""
-
-        },
-
-        "*"
-
-    );
+    return;
 
 }
 
 
-/* ============================================================
-   SEND SIGNAL TO MAIN CHAT
-   ============================================================ */
+window.opener.postMessage(
 
-function notifySignal(
-    payload
+    {
+
+        type:
+            "relay_event",
+
+        room:
+            room,
+
+        peerEvent:
+            peerEvent,
+
+        role:
+            role || null,
+
+        detail:
+            detail || "",
+
+        name:
+            name || ""
+
+    },
+
+    "*"
+
+);
+```
+
+}
+
+/* ============================================================
+SEND DATA TO MAIN PAGE
+============================================================ */
+
+function notifyClientData(data) {
+
+```
+if (
+    !window.opener ||
+    window.opener.closed
 ) {
 
-    if (
-        !window.opener ||
-        window.opener.closed
-    ) {
-
-        return;
-
-    }
-
-
-    window.opener.postMessage(
-
-        {
-
-            type:
-                "signal_data",
-
-            room:
-                room,
-
-            payload:
-                payload
-
-        },
-
-        "*"
-
-    );
+    return;
 
 }
 
 
-/* ============================================================
-   SEND SIGNAL TO OTHER USER
-   ============================================================ */
+window.opener.postMessage(
 
-function sendSignal(
-    payload
+    data,
+
+    "*"
+
+);
+```
+
+}
+
+/* ============================================================
+REMOVE CONNECTION
+============================================================ */
+
+function removeConnection(
+connection
 ) {
 
+```
+var index =
+    connections.indexOf(
+        connection
+    );
+
+
+if (
+    index !== -1
+) {
+
+    connections.splice(
+        index,
+        1
+    );
+
+}
+```
+
+}
+
+/* ============================================================
+BROADCAST
+============================================================ */
+
+function broadcast(
+data,
+except
+) {
+
+```
+for (
+    var i = 0;
+    i < connections.length;
+    i++
+) {
+
+    var connection =
+        connections[i];
+
+
     if (
-        peerConnections.length ===
-        0
+        connection === except
     ) {
 
-        outboundQueue.push(
-            payload
-        );
-
-        return;
+        continue;
 
     }
 
 
-    /*
-     * Send the signal to every connected
-     * relay peer.
-     */
-
-    for (
-        var i = 0;
-        i < peerConnections.length;
-        i++
+    if (
+        connection.open
     ) {
 
-        var connection =
-            peerConnections[i];
-
-        if (
-            connection &&
-            connection.open
-        ) {
+        try {
 
             connection.send(
-                payload
+                data
             );
 
         }
 
-    }
-
-}
-
-
-/* ============================================================
-   FLUSH SIGNAL QUEUE
-   ============================================================ */
-
-function flushQueue() {
-
-    if (
-        peerConnections.length ===
-        0
-    ) {
-
-        return;
-
-    }
-
-
-    while (
-        outboundQueue.length >
-        0
-    ) {
-
-        var payload =
-            outboundQueue.shift();
-
-
-        for (
-            var i = 0;
-            i < peerConnections.length;
-            i++
-        ) {
-
-            var connection =
-                peerConnections[i];
-
-            if (
-                connection &&
-                connection.open
-            ) {
-
-                connection.send(
-                    payload
-                );
-
-            }
-
-        }
+        catch (error) {}
 
     }
 
 }
+```
 
+}
 
 /* ============================================================
-   RECEIVE SIGNAL FROM MAIN CHAT
-   ============================================================ */
+SET UP CONNECTION
+============================================================ */
 
-window.addEventListener(
+function setupConnection(
+connection
+) {
 
-    "message",
+```
+/*
+ * Add this user to the list.
+ */
 
-    function(event) {
+connections.push(
+    connection
+);
 
-        var msg =
-            event.data;
+
+connection.on(
+
+    "open",
+
+    function() {
+
+        setStatus(
+            "Connected users: " +
+            connections.length
+        );
 
 
-        if (!msg) {
+        /*
+         * Tell the main page that
+         * this connection is ready.
+         */
 
-            return;
+        notifyClient(
+            "connected",
+            action === "create"
+                ? "host"
+                : "joiner"
+        );
 
-        }
 
+        /*
+         * For the host, this means
+         * a NEW person joined.
+         *
+         * The joiner does not need
+         * this notification because
+         * they already know they joined.
+         */
 
         if (
-            msg.room !==
-            room
+            action === "create"
         ) {
 
-            return;
-
-        }
-
-
-        if (
-            msg.type ===
-            "signal_send"
-        ) {
-
-            sendSignal(
-                msg.payload
+            notifyClient(
+                "user_joined",
+                "host"
             );
 
         }
@@ -296,253 +305,268 @@ window.addEventListener(
 );
 
 
-/* ============================================================
-   VALIDATE
-   ============================================================ */
+connection.on(
 
-if (
-    typeof Peer ===
-    "undefined"
-) {
+    "data",
 
-    setStatus(
-        "PeerJS failed to load."
-    );
+    function(data) {
 
+        /*
+         * Data arriving here is a
+         * chat message from a user.
+         */
 
-    setLobby(
-        "The PeerJS library could not be loaded."
-    );
+        if (
+            data &&
+            data.type === "chat_send"
+        ) {
 
-}
+            var message = {
 
-else if (
-    !action ||
-    !room
-) {
+                type:
+                    "chat",
 
-    setStatus(
-        "Missing parameters."
-    );
+                name:
+                    data.name,
 
+                text:
+                    data.text,
 
-    setLobby(
-        "Missing action or room."
-    );
+                fromRelay:
+                    true
 
-}
-
-else {
-
-    setStatus(
-        '<span class="spinner">↻</span> Starting...'
-    );
+            };
 
 
-    setLobby(
-        "Room: " +
-        room
-    );
+            /*
+             * Send to EVERY other user.
+             */
 
-
-    if (
-        action ===
-        "create"
-    ) {
-
-        createLobby();
-
-    }
-
-    else if (
-        action ===
-        "join"
-    ) {
-
-        joinLobby();
-
-    }
-
-    else {
-
-        setStatus(
-            "Unknown action."
-        );
-
-    }
-
-}
-
-
-/* ============================================================
-   CREATE LOBBY
-   ============================================================ */
-
-function createLobby() {
-
-    setStatus(
-        '<span class="spinner">↻</span> Connecting to PeerJS...'
-    );
-
-
-    setLobby(
-        "Creating lobby: " +
-        room
-    );
-
-
-    /*
-     * "main" is the permanent lobby ID.
-     */
-
-    try {
-
-        peer =
-            new Peer(
-                room
+            broadcast(
+                message,
+                connection
             );
 
+
+            /*
+             * Also send it back to the
+             * sender's main page through
+             * the popup.
+             *
+             * The main page ignores this
+             * because it already displayed
+             * its own message.
+             */
+
+            notifyClientData(
+                message
+            );
+
+        }
+
     }
 
-    catch (error) {
+);
 
-        setStatus(
-            "Could not start PeerJS."
+
+connection.on(
+
+    "close",
+
+    function() {
+
+        removeConnection(
+            connection
         );
 
 
-        setLobby(
-            error.message ||
-            "Unknown error."
+        setStatus(
+            "Connected users: " +
+            connections.length
         );
 
 
         notifyClient(
-            "error",
-            null,
-            error.message,
-            "constructor-error"
+            "user_left",
+            null
         );
-
-
-        return;
 
     }
 
+);
+
+
+connection.on(
+
+    "error",
+
+    function(error) {
+
+        notifyClient(
+
+            "error",
+
+            null,
+
+            error.message ||
+            "Connection error."
+
+        );
+
+    }
+
+);
+```
+
+}
+
+/* ============================================================
+HOST / CREATE LOBBY
+============================================================ */
+
+function createLobby() {
+
+```
+setStatus(
+    "Connecting to PeerJS..."
+);
+
+
+setLobby(
+    "Creating lobby: " +
+    room
+);
+
+
+try {
 
     /*
-     * PeerJS connected to its server.
+     * The permanent lobby ID
+     * is "main".
      */
 
-    peer.on(
+    peer =
+        new Peer(
+            room
+        );
+
+}
+
+catch (error) {
+
+    notifyClient(
+        "error",
+        null,
+        error.message ||
+        "Could not start PeerJS."
+    );
+
+    return;
+
+}
+
+
+/*
+ * PeerJS server accepted
+ * our "main" ID.
+ */
+
+peer.on(
+
+    "open",
+
+    function(id) {
+
+        setStatus(
+            "Lobby created!"
+        );
+
+
+        setLobby(
+            "Lobby: " +
+            id +
+            "\nWaiting for users..."
+        );
+
+
+        notifyClient(
+            "room_created",
+            "host"
+        );
+
+    }
+
+);
+
+
+/*
+ * THIS IS THE IMPORTANT PART.
+ *
+ * Every user who connects gets
+ * their own DataConnection.
+ */
+
+peer.on(
 
     "connection",
 
     function(connection) {
 
-        peerConnections.push(
+        setupConnection(
             connection
         );
 
+    }
 
-        connection.on(
-
-            "open",
-
-            function() {
-
-                setStatus(
-                    "User connected!"
-                );
+);
 
 
-                setLobby(
+/*
+ * Another person may already
+ * own the "main" ID.
+ */
 
-                    "Lobby: " +
-                    room +
-                    "\n" +
-                    peerConnections.length +
-                    " users connected."
+peer.on(
 
-                );
+    "error",
 
+    function(error) {
 
-                notifyClient(
-                    "connected_as_host",
-                    "host"
-                );
+        if (
+            error.type ===
+            "unavailable-id"
+        ) {
 
-
-                flushQueue();
-
-            }
-
-        );
+            setStatus(
+                "Lobby already exists."
+            );
 
 
-        connection.on(
-
-            "data",
-
-            function(data) {
-
-                notifySignal(
-                    data
-                );
-
-            }
-
-        );
+            setLobby(
+                "Joining existing lobby..."
+            );
 
 
-        connection.on(
-
-            "close",
-
-            function() {
-
-                var index =
-                    peerConnections.indexOf(
-                        connection
-                    );
+            notifyClient(
+                "lobby_exists",
+                "joiner",
+                error.message
+            );
 
 
-                if (
-                    index !== -1
-                ) {
+            return;
 
-                    peerConnections.splice(
-                        index,
-                        1
-                    );
-
-                }
-
-            }
-
-        );
+        }
 
 
-        connection.on(
+        notifyClient(
 
             "error",
 
-            function(error) {
+            null,
 
-                notifyClient(
-
-                    "error",
-
-                    null,
-
-                    error.message ||
-                    "Connection error.",
-
-                    error.type || ""
-
-                );
-
-            }
+            error.message ||
+            "PeerJS error."
 
         );
 
@@ -550,465 +574,212 @@ function createLobby() {
 
 );
 
-    /*
-     * Another browser connected.
-     */
 
-    peer.on(
+peer.on(
 
-        "connection",
+    "disconnected",
 
-        function(connection) {
+    function() {
 
-            peerConnection =
-                connection;
+        setStatus(
+            "Disconnected from PeerJS."
+        );
 
+    }
 
-            connection.on(
+);
+```
 
-                "open",
+}
 
-                function() {
+/* ============================================================
+JOIN EXISTING LOBBY
+============================================================ */
 
-                    setStatus(
-                        "User connected!"
-                    );
+function joinLobby() {
 
-
-                    setLobby(
-                        "Lobby: " +
-                        room +
-                        "\nUser connected."
-                    );
+```
+setStatus(
+    "Joining lobby..."
+);
 
 
-                    notifyClient(
-                        "connected_as_host",
-                        "host"
-                    );
+setLobby(
+    "Connecting to " +
+    room
+);
 
 
-                    flushQueue();
-
-                }
-
-            );
-
-
-            connection.on(
-
-                "data",
-
-                function(data) {
-
-                    notifySignal(
-                        data
-                    );
-
-                }
-
-            );
-
-
-            connection.on(
-
-                "close",
-
-                function() {
-
-                    peerConnection =
-                        null;
-
-                }
-
-            );
-
-
-            connection.on(
-
-                "error",
-
-                function(error) {
-
-                    notifyClient(
-
-                        "error",
-
-                        null,
-
-                        error.message ||
-                        "Connection error.",
-
-                        error.type || ""
-
-                    );
-
-                }
-
-            );
-
-        }
-
-    );
-
+try {
 
     /*
-     * PeerJS errors.
+     * Joiners get their own random
+     * PeerJS ID.
      */
 
-    peer.on(
+    peer =
+        new Peer();
 
+}
+
+catch (error) {
+
+    notifyClient(
         "error",
-
-        function(error) {
-
-            /*
-             * This means somebody already created
-             * the permanent "main" lobby.
-             */
-
-            if (
-                error.type ===
-                "unavailable-id"
-            ) {
-
-                setStatus(
-                    "Lobby already exists."
-                );
-
-
-                setLobby(
-                    "Joining existing lobby..."
-                );
-
-
-                /*
-                 * Tell the main page to open
-                 * a JOIN relay.
-                 */
-
-                notifyClient(
-                    "lobby_exists",
-                    "joiner",
-                    error.message,
-                    error.type
-                );
-
-
-                return;
-
-            }
-
-
-            setStatus(
-                "PeerJS error"
-            );
-
-
-            setLobby(
-
-                "Type: " +
-                error.type +
-                "\n" +
-                "Message: " +
-                error.message
-
-            );
-
-
-            notifyClient(
-
-                "error",
-
-                null,
-
-                error.message,
-
-                error.type
-
-            );
-
-        }
-
+        null,
+        error.message ||
+        "Could not start PeerJS."
     );
 
-
-    peer.on(
-
-        "disconnected",
-
-        function() {
-
-            setStatus(
-                "Disconnected"
-            );
-
-
-            setLobby(
-                "PeerJS disconnected."
-            );
-
-        }
-
-    );
+    return;
 
 }
 
 
-/* ============================================================
-   JOIN EXISTING LOBBY
-   ============================================================ */
+peer.on(
 
-function joinLobby() {
+    "open",
 
-    setStatus(
-        '<span class="spinner">↻</span> Joining lobby...'
-    );
-
-
-    setLobby(
-        "Connecting to lobby: " +
-        room
-    );
-
-
-    try {
-
-        /*
-         * Joiners use a random ID.
-         */
-
-        peer =
-            new Peer();
-
-    }
-
-    catch (error) {
-
-        setStatus(
-            "Could not start PeerJS."
-        );
-
+    function() {
 
         setLobby(
-            error.message ||
-            "Unknown error."
+            "Connected to PeerJS.\n" +
+            "Joining " +
+            room +
+            "..."
         );
 
 
-        notifyClient(
-            "error",
-            null,
-            error.message,
-            "constructor-error"
+        /*
+         * Connect to the permanent
+         * "main" peer.
+         */
+
+        var connection =
+            peer.connect(
+
+                room,
+
+                {
+                    reliable:
+                        true
+                }
+
+            );
+
+
+        setupConnection(
+            connection
         );
-
-
-        return;
 
     }
 
+);
 
-    peer.on(
 
-        "open",
+peer.on(
 
-        function(id) {
+    "error",
 
-            setLobby(
-                "Connected to PeerJS.\n" +
-                "Joining " +
-                room +
-                "..."
-            );
+    function(error) {
 
+        notifyClient(
 
-            var connection =
-                peer.connect(
-                    room,
-                    {
-                        reliable:
-                            true
-                    }
-                );
+            "error",
 
+            null,
 
-            peerConnection =
-                connection;
+            error.message ||
+            "PeerJS error."
 
+        );
 
-            var timeout =
-                setTimeout(
+    }
 
-                    function() {
+);
 
-                        if (
-                            !connection.open
-                        ) {
 
-                            setStatus(
-                                "Could not join lobby."
-                            );
+peer.on(
 
+    "disconnected",
 
-                            setLobby(
-                                "The lobby could not be reached."
-                            );
+    function() {
 
+        setStatus(
+            "Disconnected."
+        );
 
-                            notifyClient(
+    }
 
-                                "error",
+);
+```
 
-                                null,
+}
 
-                                "host_not_found",
+/* ============================================================
+START
+============================================================ */
 
-                                "peer-unavailable"
+if (
+typeof Peer ===
+"undefined"
+) {
 
-                            );
+```
+setStatus(
+    "PeerJS failed to load."
+);
 
-                        }
+setLobby(
+    "The PeerJS library could not be loaded."
+);
+```
 
-                    },
+}
 
-                    10000
+else if (
+!action ||
+!room
+) {
 
-                );
+```
+setStatus(
+    "Missing parameters."
+);
 
+setLobby(
+    "Missing action or room."
+);
+```
 
-            connection.on(
+}
 
-                "open",
+else if (
+action === "create"
+) {
 
-                function() {
+```
+createLobby();
+```
 
-                    clearTimeout(
-                        timeout
-                    );
+}
 
+else if (
+action === "join"
+) {
 
-                    setStatus(
-                        "Connected!"
-                    );
+```
+joinLobby();
+```
 
+}
 
-                    setLobby(
-                        "Connected to lobby."
-                    );
-
-
-                    notifyClient(
-                        "connected_as_joiner",
-                        "joiner"
-                    );
-
-
-                    flushQueue();
-
-                }
-
-            );
-
-
-            connection.on(
-
-                "data",
-
-                function(data) {
-
-                    notifySignal(
-                        data
-                    );
-
-                }
-
-            );
-
-
-            connection.on(
-
-                "close",
-
-                function() {
-
-                    peerConnection =
-                        null;
-
-                }
-
-            );
-
-
-            connection.on(
-
-                "error",
-
-                function(error) {
-
-                    clearTimeout(
-                        timeout
-                    );
-
-
-                    notifyClient(
-
-                        "error",
-
-                        null,
-
-                        error.message ||
-                        "Connection error.",
-
-                        error.type || ""
-
-                    );
-
-                }
-
-            );
-
-        }
-
-    );
-
-
-    peer.on(
-
-        "error",
-
-        function(error) {
-
-            setStatus(
-                "PeerJS error"
-            );
-
-
-            setLobby(
-
-                "Type: " +
-                error.type +
-                "\n" +
-                "Message: " +
-                error.message
-
-            );
-
-
-            notifyClient(
-
-                "error",
-
-                null,
-
-                error.message,
-
-                error.type
-
-            );
-
-        }
-
-    );
+else {
+
+```
+setStatus(
+    "Unknown action."
+);
+```
 
 }
