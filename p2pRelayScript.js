@@ -12,6 +12,14 @@ var room =
     params.get("room");
 
 
+console.log(
+    "Relay loaded: action=" +
+    action +
+    ", room=" +
+    room
+);
+
+
 /* ============================================================
    TELL MAIN PAGE THAT RELAY LOADED
    ============================================================ */
@@ -20,6 +28,10 @@ if (
     window.opener &&
     !window.opener.closed
 ) {
+
+    console.log(
+        "Relay: Sending relay_ready message"
+    );
 
     window.opener.postMessage(
 
@@ -703,6 +715,11 @@ window.addEventListener(
 
 function createLobby() {
 
+    console.log(
+        "createLobby called for room: " +
+        room
+    );
+
     setStatus(
         "Connecting to PeerJS..."
     );
@@ -723,6 +740,11 @@ function createLobby() {
     }
 
     catch (error) {
+
+        console.error(
+            "Error creating Peer:",
+            error
+        );
 
         notifyClient(
 
@@ -750,6 +772,11 @@ function createLobby() {
 
         function(id) {
 
+            console.log(
+                "Peer opened with ID: " +
+                id
+            );
+
             setStatus(
                 "Lobby created!"
             );
@@ -763,6 +790,10 @@ function createLobby() {
 
             );
 
+
+            console.log(
+                "Sending room_created event"
+            );
 
             notifyClient(
 

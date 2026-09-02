@@ -751,6 +751,13 @@ window.addEventListener(
         var msg =
             event.data || {};
 
+        /*
+         * Debug: log all messages received
+         */
+        console.log(
+            "Main received from relay:",
+            msg
+        );
 
         /*
          * Ignore messages for
