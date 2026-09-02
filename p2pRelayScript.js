@@ -384,28 +384,6 @@ function setupConnection(
             }
 
 
-            if (
-                action ===
-                "create"
-            ) {
-
-                notifyClient(
-
-                    "user_joined",
-
-                    "host",
-
-                    "",
-
-                    "",
-                    
-                    connection.peer
-
-                );
-
-            }
-
-
             /*
             * The PeerJS connection is now open.
             * We no longer need the relay popup.
