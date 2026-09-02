@@ -525,42 +525,34 @@
 			   ============================================= */
 
 			if (
-				msg.type === "relay_event" &&
-				msg.peerEvent === "lobby_exists"
-			) {
+                msg.type === "relay_event" &&
+                msg.peerEvent === "lobby_exists"
+            ) {
 
-				statusElement.textContent =
-					"Lobby found. Joining...";
-
-
-				/*
-				 * The create relay is useless now.
-				 * Close it before creating the
-				 * join relay.
-				 */
-				closeRelay();
+                statusElement.textContent =
+                    "Lobby found. Joining...";
 
 
-				setTimeout(
-					function() {
+                closeRelay();
 
-						if (!hasJoined) {
-							return;
-						}
+                setTimeout(
+
+                    function() {
+
+                        openRelay(
+                            "join"
+                        );
+
+                    },
+
+                    250
+
+                );
 
 
-						openRelay(
-							"join"
-						);
+                return;
 
-					},
-					250
-				);
-
-
-				return;
-			}
-
+            }
 
 			/* =============================================
 			   CONNECTED
