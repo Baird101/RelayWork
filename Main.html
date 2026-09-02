@@ -816,11 +816,7 @@
 			}
 
 
-			if (
-				!signalWindow ||
-				signalWindow.closed ||
-				!relayReady
-			) {
+			if (!signalWindow || signalWindow.closed || !relayReady) {
 
 				systemMessage(
 					"Not connected yet."
@@ -850,24 +846,17 @@
 			 * Display our own message immediately.
 			 */
 
-			addMessage(
-				myName,
-				text
-			);
+			addMessage(myName, text);
 
 
 			/*
 			 * Send it to the relay.
 			 */
 
-			signalWindow.postMessage(
-				message,
-				"*"
-			);
+			signalWindow.postMessage(message, "*");
 
 
-			messageInput.value =
-				"";
+			messageInput.value = "";
 
 			messageInput.focus();
 
