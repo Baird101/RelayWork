@@ -704,18 +704,35 @@ window.addEventListener(
 
         }
 
-        if (
-            data.type === "set_name"
-        ) {
-
-            /*
-             * The host itself does not have a
-             * PeerJS connection entry, so store
-             * its name separately.
-             */
+        if (data.type === "set_name") {
 
             window.hostName =
                 data.name || "";
+
+
+            /*
+            * Tell the host relay about this user's name.
+            */
+            broadcast(
+
+                {
+
+                    type:
+                        "relay_user_name",
+
+                    room:
+                        room,
+
+                    name:
+                        data.name ||
+                        "",
+
+                    peerId:
+                        peer.id
+
+                }
+
+            );
 
             return;
 
