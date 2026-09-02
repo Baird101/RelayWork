@@ -362,12 +362,6 @@ function setupConnection(
             );
 
 
-            /*
-             * Tell the main page that this
-             * connection is ready.
-             *
-             * Only JOIN relays need this.
-             */
             if (
                 action ===
                 "join"
@@ -390,10 +384,6 @@ function setupConnection(
             }
 
 
-            /*
-             * Tell the host's main page
-             * that another user connected.
-             */
             if (
                 action ===
                 "create"
@@ -408,13 +398,18 @@ function setupConnection(
                     "",
 
                     "",
-
+                    
                     connection.peer
 
                 );
 
             }
-            
+
+
+            /*
+            * The PeerJS connection is now open.
+            * We no longer need the relay popup.
+            */
             if (
                 window.opener &&
                 !window.opener.closed
@@ -436,6 +431,7 @@ function setupConnection(
                 );
 
             }
+
         }
 
     );
