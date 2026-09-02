@@ -12,48 +12,9 @@ var room =
     params.get("room");
 
 
-console.log(
-    "Relay loaded: action=" +
-    action +
-    ", room=" +
-    room
-);
-
-
-/* ============================================================
-   TELL MAIN PAGE THAT RELAY LOADED
-   ============================================================ */
-
-if (
-    window.opener &&
-    !window.opener.closed
-) {
-
-    console.log(
-        "Relay: Sending relay_ready message"
-    );
-
-    window.opener.postMessage(
-
-        {
-
-            type:
-                "relay_ready",
-
-            room:
-                room
-
-        },
-
-        "*"
-
-    );
-
-}
-
-
 var peer =
     null;
+
 
 /*
  * Every connected user gets
@@ -61,6 +22,15 @@ var peer =
  */
 var connections =
     [];
+
+
+/*
+ * The host is not stored in
+ * connections because the host
+ * is this relay itself.
+ */
+var hostName =
+    "";
 
 
 /* ============================================================
@@ -118,6 +88,7 @@ function notifyClient(
 
     }
 
+
     window.opener.postMessage(
 
         {
@@ -153,7 +124,7 @@ function notifyClient(
 
 
 /* ============================================================
-   SEND CHAT/SIGNAL TO MAIN PAGE
+   SEND DATA TO MAIN PAGE
    ============================================================ */
 
 function notifyMain(data) {
@@ -166,6 +137,7 @@ function notifyMain(data) {
         return;
 
     }
+
 
     window.opener.postMessage(
         data,
@@ -224,6 +196,7 @@ function findConnection(
 
     }
 
+
     return null;
 
 }
@@ -251,16 +224,19 @@ function removeConnection(
             var user =
                 connections[i];
 
+
             connections.splice(
                 i,
                 1
             );
+
 
             return user;
 
         }
 
     }
+
 
     return null;
 
@@ -285,10 +261,7 @@ function broadcast(
         var connection =
             connections[i].connection;
 
-        /*
-         * Don't send back to the
-         * connection that sent it.
-         */
+
         if (
             connection ===
             exceptConnection
@@ -297,6 +270,7 @@ function broadcast(
             continue;
 
         }
+
 
         if (
             connection.open
@@ -339,7 +313,7 @@ function setupConnection(
 
 
     /* ========================================================
-       OPEN
+       CONNECTION OPEN
        ======================================================== */
 
     connection.on(
@@ -355,17 +329,30 @@ function setupConnection(
 
 
             setLobby(
+
                 "Lobby: " +
                 room +
                 "\nUsers connected: " +
                 connections.length
+
             );
 
+
+            /* =================================================
+               JOINER RELAY
+               ================================================= */
 
             if (
                 action ===
                 "join"
             ) {
+
+                /*
+                 * This relay is the joiner's relay.
+                 *
+                 * Tell the joiner's MAIN page that
+                 * its connection to the host is ready.
+                 */
 
                 notifyClient(
 
@@ -384,27 +371,38 @@ function setupConnection(
             }
 
 
-            /*
-            * The PeerJS connection is now open.
-            * We no longer need the relay popup.
-            */
+            /* =================================================
+               HOST RELAY
+               ================================================= */
+
             if (
-                window.opener &&
-                !window.opener.closed
+                action ===
+                "create"
             ) {
 
-                window.opener.postMessage(
+                /*
+                 * A new PeerJS connection has opened.
+                 *
+                 * This means somebody successfully
+                 * joined the host's lobby.
+                 *
+                 * IMPORTANT:
+                 * Tell the HOST main page immediately.
+                 */
 
-                    {
-                        type:
-                            "relay_connected",
+                notifyClient(
 
-                        room:
-                            room
+                    "user_joined",
 
-                    },
+                    "host",
 
-                    "*"
+                    "",
+
+                    user
+                        ? user.name
+                        : "",
+
+                    connection.peer
 
                 );
 
@@ -431,40 +429,10 @@ function setupConnection(
 
             }
 
-            if (
-                data.type ===
-                "set_name"
-            ) {
 
-                if (user) {
-
-                    user.name =
-                        data.name || "";
-
-                }
-
-
-                notifyClient(
-
-                    "user_joined",
-
-                    "host",
-
-                    "",
-
-                    data.name || "Someone",
-
-                    connection.peer
-
-                );
-
-
-                return;
-
-            }
             /* =================================================
-            USER NAME
-            ================================================= */
+               SET NAME
+               ================================================= */
 
             if (
                 data.type ===
@@ -475,15 +443,17 @@ function setupConnection(
 
                     user.name =
                         data.name ||
-                        "Someone";
+                        "";
 
                 }
 
 
                 /*
-                * Tell the host's MAIN page
-                * that this user joined.
-                */
+                 * If this is a joiner connection,
+                 * notify the host that the name
+                 * is now known.
+                 */
+
                 if (
                     action ===
                     "create"
@@ -497,8 +467,9 @@ function setupConnection(
 
                         "",
 
-                        data.name ||
-                        "Someone",
+                        user
+                            ? user.name
+                            : data.name || "",
 
                         connection.peer
 
@@ -510,6 +481,7 @@ function setupConnection(
                 return;
 
             }
+
 
             /* =================================================
                CHAT SEND
@@ -523,7 +495,9 @@ function setupConnection(
                 if (user) {
 
                     user.name =
-                        data.name || "";
+                        data.name ||
+                        user.name ||
+                        "";
 
                 }
 
@@ -538,6 +512,11 @@ function setupConnection(
 
                     name:
                         data.name ||
+                        (
+                            user
+                                ? user.name
+                                : ""
+                        ) ||
                         "Unknown",
 
                     text:
@@ -552,9 +531,10 @@ function setupConnection(
 
 
                 /*
-                 * Send to EVERY OTHER
-                 * connected user.
+                 * Send the message to all
+                 * OTHER PeerJS connections.
                  */
+
                 broadcast(
                     message,
                     connection
@@ -562,9 +542,12 @@ function setupConnection(
 
 
                 /*
-                 * Send it to this relay's
-                 * own main page too.
+                 * Also send the message to
+                 * this relay's own main page.
+                 *
+                 * This is important for the host.
                  */
+
                 notifyMain(
                     message
                 );
@@ -595,7 +578,7 @@ function setupConnection(
 
 
     /* ========================================================
-       CLOSE
+       CONNECTION CLOSED
        ======================================================== */
 
     connection.on(
@@ -617,28 +600,68 @@ function setupConnection(
 
 
             setLobby(
+
                 "Lobby: " +
                 room +
                 "\nUsers connected: " +
                 connections.length
-            );
-
-
-            notifyClient(
-
-                "user_left",
-
-                null,
-
-                "",
-
-                oldUser
-                    ? oldUser.name
-                    : "",
-
-                connection.peer
 
             );
+
+
+            /*
+             * Tell the host that somebody left.
+             */
+
+            if (
+                action ===
+                "create"
+            ) {
+
+                notifyClient(
+
+                    "user_left",
+
+                    "host",
+
+                    "",
+
+                    oldUser
+                        ? oldUser.name
+                        : "",
+
+                    connection.peer
+
+                );
+
+            }
+
+
+            /*
+             * Also tell a joiner's main page
+             * if its host connection closes.
+             */
+
+            if (
+                action ===
+                "join"
+            ) {
+
+                notifyClient(
+
+                    "user_left",
+
+                    null,
+
+                    "",
+
+                    "",
+
+                    connection.peer
+
+                );
+
+            }
 
         }
 
@@ -646,7 +669,7 @@ function setupConnection(
 
 
     /* ========================================================
-       ERROR
+       CONNECTION ERROR
        ======================================================== */
 
     connection.on(
@@ -665,6 +688,7 @@ function setupConnection(
                 "Connection error.",
 
                 "",
+
                 connection.peer
 
             );
@@ -685,6 +709,11 @@ window.addEventListener(
     "message",
 
     function(event) {
+
+        /*
+         * Only accept messages from
+         * our parent MAIN page.
+         */
 
         if (
             !window.opener ||
@@ -712,14 +741,95 @@ window.addEventListener(
         }
 
 
+        /* ====================================================
+           SET NAME
+           ==================================================== */
+
+        if (
+            data.type ===
+            "set_name"
+        ) {
+
+            /*
+             * HOST:
+             * Store the host's name.
+             */
+
+            if (
+                action ===
+                "create"
+            ) {
+
+                hostName =
+                    data.name ||
+                    "";
+
+                return;
+
+            }
+
+
+            /*
+             * JOINER:
+             *
+             * The joiner's name needs to travel
+             * through the PeerJS connection to
+             * the host.
+             */
+
+            if (
+                action ===
+                "join"
+            ) {
+
+                /*
+                 * Find the connection from this
+                 * joiner relay to the host.
+                 */
+
+                if (
+                    connections.length > 0
+                ) {
+
+                    var hostConnection =
+                        connections[0].connection;
+
+
+                    if (
+                        hostConnection.open
+                    ) {
+
+                        hostConnection.send({
+
+                            type:
+                                "set_name",
+
+                            name:
+                                data.name ||
+                                ""
+
+                        });
+
+                    }
+
+                }
+
+                return;
+
+            }
+
+        }
+
+
+        /* ====================================================
+           CHAT SEND
+           ==================================================== */
+
         if (
             data.type ===
             "chat_send"
         ) {
 
-            /*
-             * Create the message object.
-             */
             var message = {
 
                 type:
@@ -730,6 +840,7 @@ window.addEventListener(
 
                 name:
                     data.name ||
+                    hostName ||
                     "Unknown",
 
                 text:
@@ -742,58 +853,47 @@ window.addEventListener(
 
             };
 
+
             /*
-             * Broadcast to everyone.
+             * Broadcast to every PeerJS
+             * connection.
              */
+
             broadcast(
                 message
             );
 
+
             /*
-             * Also send it back to
-             * our own main page.
+             * Send the message back to
+             * this relay's own MAIN page.
+             *
+             * This is what lets the host
+             * see their own chat message.
              */
+
             notifyMain(
                 message
             );
 
-            return;
-
-        }
-
-        if (data.type === "set_name") {
-
-            window.hostName =
-                data.name || "";
-
-
-            /*
-            * Tell the host relay about this user's name.
-            */
-            broadcast(
-
-                {
-
-                    type:
-                        "relay_user_name",
-
-                    room:
-                        room,
-
-                    name:
-                        data.name ||
-                        "",
-
-                    peerId:
-                        peer.id
-
-                }
-
-            );
 
             return;
 
         }
+
+
+        /* ====================================================
+           OTHER DATA
+           ==================================================== */
+
+        broadcast(
+            data
+        );
+
+
+        notifyMain(
+            data
+        );
 
     }
 
@@ -806,14 +906,10 @@ window.addEventListener(
 
 function createLobby() {
 
-    console.log(
-        "createLobby called for room: " +
-        room
-    );
-
     setStatus(
         "Connecting to PeerJS..."
     );
+
 
     setLobby(
         "Creating lobby: " +
@@ -831,11 +927,6 @@ function createLobby() {
     }
 
     catch (error) {
-
-        console.error(
-            "Error creating Peer:",
-            error
-        );
 
         notifyClient(
 
@@ -863,11 +954,6 @@ function createLobby() {
 
         function(id) {
 
-            console.log(
-                "Peer opened with ID: " +
-                id
-            );
-
             setStatus(
                 "Lobby created!"
             );
@@ -881,10 +967,6 @@ function createLobby() {
 
             );
 
-
-            console.log(
-                "Sending room_created event"
-            );
 
             notifyClient(
 
@@ -906,7 +988,7 @@ function createLobby() {
 
 
     /* ========================================================
-       NEW USER
+       NEW USER CONNECTION
        ======================================================== */
 
     peer.on(
@@ -999,16 +1081,19 @@ function createLobby() {
 
         function() {
 
-            /*
-             * PeerJS can temporarily lose its
-             * connection to the signaling server.
-             *
-             * Try to reconnect instead of
-             * permanently dying.
-             */
-
             setStatus(
                 "Reconnecting to PeerJS..."
+            );
+
+
+            notifyClient(
+
+                "disconnected",
+
+                null,
+
+                "PeerJS disconnected."
+
             );
 
 
@@ -1055,6 +1140,7 @@ function joinLobby() {
         "Joining lobby..."
     );
 
+
     setLobby(
         "Connecting to " +
         room
@@ -1064,9 +1150,9 @@ function joinLobby() {
     try {
 
         /*
-         * Every joiner gets a
-         * completely unique ID.
+         * Every joiner gets a unique PeerJS ID.
          */
+
         peer =
             new Peer();
 
@@ -1112,16 +1198,19 @@ function joinLobby() {
 
             /*
              * Connect this relay to the
-             * permanent main lobby.
+             * permanent host relay.
              */
+
             var connection =
                 peer.connect(
 
                     room,
 
                     {
+
                         reliable:
                             true
+
                     }
 
                 );
@@ -1137,7 +1226,7 @@ function joinLobby() {
 
 
     /* ========================================================
-       ERROR
+       PEER ERROR
        ======================================================== */
 
     peer.on(
@@ -1177,6 +1266,17 @@ function joinLobby() {
 
             setStatus(
                 "Reconnecting to PeerJS..."
+            );
+
+
+            notifyClient(
+
+                "disconnected",
+
+                null,
+
+                "PeerJS disconnected."
+
             );
 
 
