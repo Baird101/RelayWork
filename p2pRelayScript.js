@@ -463,6 +463,55 @@ function setupConnection(
 
             }
             /* =================================================
+            USER NAME
+            ================================================= */
+
+            if (
+                data.type ===
+                "set_name"
+            ) {
+
+                if (user) {
+
+                    user.name =
+                        data.name ||
+                        "Someone";
+
+                }
+
+
+                /*
+                * Tell the host's MAIN page
+                * that this user joined.
+                */
+                if (
+                    action ===
+                    "create"
+                ) {
+
+                    notifyClient(
+
+                        "user_joined",
+
+                        "host",
+
+                        "",
+
+                        data.name ||
+                        "Someone",
+
+                        connection.peer
+
+                    );
+
+                }
+
+
+                return;
+
+            }
+
+            /* =================================================
                CHAT SEND
                ================================================= */
 
