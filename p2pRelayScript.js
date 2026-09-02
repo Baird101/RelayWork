@@ -3,15 +3,45 @@ var params =
         window.location.search
     );
 
+
 var action =
     params.get("action");
+
 
 var room =
     params.get("room");
 
+
+/* ============================================================
+   TELL MAIN PAGE THAT RELAY LOADED
+   ============================================================ */
+
+if (
+    window.opener &&
+    !window.opener.closed
+) {
+
+    window.opener.postMessage(
+
+        {
+
+            type:
+                "relay_ready",
+
+            room:
+                room
+
+        },
+
+        "*"
+
+    );
+
+}
+
+
 var peer =
     null;
-
 
 /*
  * Every connected user gets
@@ -1023,9 +1053,57 @@ function joinLobby() {
 
         function() {
 
-            setStatus(
-                "Reconnecting to PeerJS..."
+            peer.on(
+
+    "disconnected",
+
+    function() {
+
+        setStatus(
+            "Reconnecting to PeerJS..."
+        );
+
+
+         notifyClient(
+
+                "disconnected",
+
+                null,
+
+                "PeerJS disconnected."
+
             );
+
+
+            setTimeout(
+
+                function() {
+
+                    if (
+                        peer &&
+                        !peer.destroyed &&
+                        peer.disconnected
+                    ) {
+
+                        try {
+
+                            peer.reconnect();
+
+                        }
+
+                        catch (error) {}
+
+                    }
+
+                },
+
+                1000
+
+            );
+
+        }
+
+    );
 
 
             setTimeout(
