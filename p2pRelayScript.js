@@ -24,7 +24,7 @@ UI
 
 function setStatus(text) {
 
-```
+
 var element =
     document.getElementById("status");
 
@@ -34,13 +34,13 @@ if (element) {
         text;
 
 }
-```
+
 
 }
 
 function setLobby(text) {
 
-```
+
 var element =
     document.getElementById("lobby");
 
@@ -50,7 +50,7 @@ if (element) {
         text;
 
 }
-```
+
 
 }
 
@@ -66,7 +66,7 @@ name,
 peerId
 ) {
 
-```
+
 if (
     !window.opener ||
     window.opener.closed
@@ -106,7 +106,7 @@ window.opener.postMessage(
     "*"
 
 );
-```
+
 
 }
 
@@ -116,7 +116,7 @@ SEND DATA TO MAIN PAGE
 
 function notifyMain(data) {
 
-```
+
 if (
     !window.opener ||
     window.opener.closed
@@ -131,7 +131,7 @@ window.opener.postMessage(
     data,
     "*"
 );
-```
+
 
 }
 
@@ -141,7 +141,7 @@ CONNECTION STORAGE
 
 function addConnection(connection) {
 
-```
+
 /*
  * Avoid adding the same connection twice.
  */
@@ -166,13 +166,13 @@ connections.push({
         connection.peer
 
 });
-```
+
 
 }
 
 function findConnection(connection) {
 
-```
+
 for (
     var i = 0;
     i < connections.length;
@@ -192,13 +192,13 @@ for (
 
 
 return null;
-```
+
 
 }
 
 function findConnectionByPeerId(peerId) {
 
-```
+
 for (
     var i = 0;
     i < connections.length;
@@ -218,13 +218,13 @@ for (
 
 
 return null;
-```
+
 
 }
 
 function removeConnection(connection) {
 
-```
+
 for (
     var i = 0;
     i < connections.length;
@@ -252,7 +252,7 @@ for (
 
 
 return null;
-```
+
 
 }
 
@@ -265,7 +265,7 @@ data,
 exceptConnection
 ) {
 
-```
+
 for (
     var i = 0;
     i < connections.length;
@@ -313,7 +313,7 @@ for (
     }
 
 }
-```
+
 
 }
 
@@ -326,7 +326,7 @@ data,
 user
 ) {
 
-```
+
 return {
 
     type:
@@ -358,7 +358,7 @@ return {
         ""
 
 };
-```
+
 
 }
 
@@ -371,7 +371,7 @@ connection,
 data
 ) {
 
-```
+
 var user =
     findConnection(
         connection
@@ -446,7 +446,7 @@ if (
     return;
 
 }
-```
+
 
 }
 
@@ -458,7 +458,7 @@ function setupConnection(
 connection
 ) {
 
-```
+
 addConnection(
     connection
 );
@@ -839,7 +839,7 @@ connection.on(
 
     }
 );
-```
+
 
 }
 
@@ -851,7 +851,7 @@ window.addEventListener(
 "message",
 function(event) {
 
-```
+
     /*
      * Only accept messages from our
      * own Main.html.
@@ -1194,7 +1194,7 @@ function(event) {
     }
 
 }
-```
+
 
 );
 
@@ -1204,7 +1204,7 @@ CREATE LOBBY
 
 function createLobby() {
 
-```
+
 setStatus(
     "Connecting to PeerJS..."
 );
@@ -1430,7 +1430,7 @@ peer.on(
 
     }
 );
-```
+
 
 }
 
@@ -1440,7 +1440,7 @@ JOIN EXISTING LOBBY
 
 function joinLobby() {
 
-```
+
 setStatus(
     "Joining lobby..."
 );
@@ -1602,7 +1602,7 @@ peer.on(
 
     }
 );
-```
+
 
 }
 
@@ -1615,7 +1615,7 @@ typeof Peer ===
 "undefined"
 ) {
 
-```
+
 setStatus(
     "PeerJS failed to load."
 );
@@ -1624,7 +1624,7 @@ setStatus(
 setLobby(
     "The PeerJS library could not be loaded."
 );
-```
+
 
 }
 
@@ -1633,7 +1633,7 @@ else if (
 !room
 ) {
 
-```
+
 setStatus(
     "Missing parameters."
 );
@@ -1642,7 +1642,7 @@ setStatus(
 setLobby(
     "Missing action or room."
 );
-```
+
 
 }
 
@@ -1651,9 +1651,9 @@ action ===
 "create"
 ) {
 
-```
+
 createLobby();
-```
+
 
 }
 
@@ -1662,18 +1662,18 @@ action ===
 "join"
 ) {
 
-```
+
 joinLobby();
-```
+
 
 }
 
 else {
 
-```
+
 setStatus(
     "Unknown action."
 );
-```
+
 
 }
