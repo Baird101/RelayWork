@@ -1369,3 +1369,47 @@ else {
     );
 
 }
+
+/* ============================================================
+   CLOSE RELAY WHEN MAIN PAGE CLOSES
+   ============================================================ */
+
+setInterval(
+
+    function() {
+
+        /*
+         * If the main page that opened this relay
+         * no longer exists, close this relay too.
+         */
+
+        if (
+            !window.opener ||
+            window.opener.closed
+        ) {
+
+            if (
+                peer &&
+                !peer.destroyed
+            ) {
+
+                try {
+
+                    peer.destroy();
+
+                }
+
+                catch (error) {}
+
+            }
+
+
+            window.close();
+
+        }
+
+    },
+
+    500
+
+);
