@@ -602,30 +602,43 @@ window.addEventListener(
         ) {
 
             /*
+             * Create the message object.
+             */
+            var message = {
+
+                type:
+                    "chat",
+
+                room:
+                    room,
+
+                name:
+                    data.name ||
+                    "Unknown",
+
+                text:
+                    data.text ||
+                    "",
+
+                senderId:
+                    data.senderId ||
+                    ""
+
+            };
+
+            /*
              * Broadcast to everyone.
              */
             broadcast(
-                {
+                message
+            );
 
-                    type:
-                        "chat",
-
-                    room:
-                        room,
-
-                    name:
-                        data.name ||
-                        "Unknown",
-
-                    text:
-                        data.text ||
-                        "",
-
-                    senderId:
-                        data.senderId ||
-                        ""
-
-                }
+            /*
+             * Also send it back to
+             * our own main page.
+             */
+            notifyMain(
+                message
             );
 
             return;

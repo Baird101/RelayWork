@@ -776,6 +776,9 @@ window.addEventListener(
             msg.peerEvent === "room_created"
         ) {
 
+            relayReady =
+                true;
+
             window.chatPeerId =
                 msg.peerId;
 
