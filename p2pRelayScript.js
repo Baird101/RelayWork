@@ -265,6 +265,67 @@ for (
 }
 
 /* ============================================================
+RECEIVE MESSAGES FROM MAIN PAGE
+============================================================ */
+
+window.addEventListener(
+
+    "message",
+
+    function(event) {
+
+        if (
+            !window.opener ||
+            event.source !== window.opener
+        ) {
+
+            return;
+
+        }
+
+
+        var data =
+            event.data || {};
+
+
+        if (
+            data.type === "chat_send"
+        ) {
+
+            /*
+             * Broadcast the chat message
+             * to all connected peers.
+             */
+
+            broadcast(
+                {
+
+                    type:
+                        "chat",
+
+                    room:
+                        data.room,
+
+                    name:
+                        data.name || "Unknown",
+
+                    text:
+                        data.text || "",
+
+                    senderId:
+                        data.senderId || ""
+
+                }
+            );
+
+        }
+
+    }
+
+);
+
+
+/* ============================================================
 SET UP CONNECTION
 ============================================================ */
 
@@ -301,25 +362,31 @@ connection.on(
 
 
         /*
-         * Tell the main page that
+         * Tell the joiner that
          * this connection is ready.
+         * 
+         * For creators, this is ignored.
          */
 
-        notifyClient(
+        if (
+            action === "join"
+        ) {
 
-            "connected",
+            notifyClient(
 
-            action === "create"
-                ? "host"
-                : "joiner",
+                "connected",
 
-            "",
+                "joiner",
 
-            "",
+                "",
 
-            peer.id
+                "",
 
-        );
+                peer.id
+
+            );
+
+        }
 
     }
 
@@ -385,12 +452,8 @@ connection.on(
 
 
             /*
-             * Send the message to EVERYONE.
-             *
-             * This includes the sender.
-             *
-             * The sender ignores their copy
-             * using senderId.
+             * Send the message to all
+             * connected peers.
              */
 
             broadcast(
@@ -399,10 +462,74 @@ connection.on(
 
 
             /*
-             * Tell the main page that
-             * somebody has joined once
-             * we know their name.
+             * Also send to our main page
+             * so they can see it.
              */
+
+            if (
+                window.opener &&
+                !window.opener.closed
+            ) {
+
+                window.opener.postMessage(
+                    message,
+                    "*"
+                );
+
+            }
+
+
+            return;
+
+        }
+
+
+        /* =================================================
+           RELAYED CHAT MESSAGE
+           ================================================= */
+
+        if (
+            data.type ===
+            "chat"
+        ) {
+
+            /*
+             * Update user name if not already set.
+             */
+
+            if (user && !user.name) {
+
+                user.name =
+                    data.name || "";
+
+            }
+
+
+            /*
+             * Broadcast to all other connected peers.
+             */
+
+            broadcast(
+                data
+            );
+
+
+            /*
+             * Also send to our main page.
+             */
+
+            if (
+                window.opener &&
+                !window.opener.closed
+            ) {
+
+                window.opener.postMessage(
+                    data,
+                    "*"
+                );
+
+            }
+
 
             return;
 
@@ -749,25 +876,6 @@ peer.on(
             "Joining " +
             room +
             "..."
-
-        );
-
-
-        /*
-         * Tell the main page its ID.
-         */
-
-        notifyClient(
-
-            "connected",
-
-            "joiner",
-
-            "",
-
-            "",
-
-            id
 
         );
 
