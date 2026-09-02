@@ -895,22 +895,14 @@
 
 		function joinLobby() {
 
-			currentRoom =
-				"main";
+			currentRoom = "main";
 
-
-			relayReady =
-				false;
-
+			relayReady = false;
 
 			statusElement.textContent =
-				"Creating lobby...";
+				"Finding lobby...";
 
-
-			openRelay(
-				"create"
-			);
-
+			openRelay("create");
 		}
 
 
