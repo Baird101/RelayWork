@@ -4,14 +4,13 @@
 
 <head>
 
-
 <meta charset="utf-8">
 
 <meta name="viewport"
-    content="width=device-width,
-    initial-scale=1.0,
-    maximum-scale=1.0,
-    user-scalable=no">
+ content="width=device-width,
+ initial-scale=1.0,
+ maximum-scale=1.0,
+ user-scalable=no">
 
 <title>Multiplayer Chat</title>
 
@@ -317,65 +316,73 @@
 
 </style>
 
-
 </head>
 
 <body>
 
 <div id="wrapper">
 
-
 <div id="chat">
 
-    <div id="nameScreen">
+```
+<!-- ==================================================
+     NAME SCREEN
+     ================================================== -->
 
-        <h1>
-            Join Lobby
-        </h1>
+<div id="nameScreen">
 
-        <p>
-            Enter the name you want other users to see.
-        </p>
+    <h1>
+        Join Lobby
+    </h1>
+
+    <p>
+        Enter the name you want other users to see.
+    </p>
+
+    <input
+        id="nameInput"
+        type="text"
+        placeholder="Your name"
+        maxlength="20"
+        autocomplete="off">
+
+    <button id="joinButton">
+        Join Lobby
+    </button>
+
+</div>
+
+
+<!-- ==================================================
+     CHAT SCREEN
+     ================================================== -->
+
+<div id="chatScreen">
+
+    <div id="messages"></div>
+
+    <div id="status">
+        Connecting...
+    </div>
+
+    <div id="inputArea">
 
         <input
-            id="nameInput"
+            id="messageInput"
             type="text"
-            placeholder="Your name"
-            maxlength="20"
+            placeholder="Type a message..."
             autocomplete="off">
 
-        <button id="joinButton">
-            Join Lobby
+        <button id="sendButton">
+            Send
         </button>
 
     </div>
 
-    <div id="chatScreen">
-
-        <div id="messages"></div>
-
-        <div id="status">
-            Connecting...
-        </div>
-
-        <div id="inputArea">
-
-            <input
-                id="messageInput"
-                type="text"
-                placeholder="Type a message..."
-                autocomplete="off">
-
-            <button id="sendButton">
-                Send
-            </button>
-
-        </div>
-
-    </div>
+</div>
+```
 
 </div>
-
 
 </div>
 
@@ -386,16 +393,24 @@
    ============================================================ */
 
 var nameScreen =
-    document.getElementById("nameScreen");
+    document.getElementById(
+        "nameScreen"
+    );
 
 var nameInput =
-    document.getElementById("nameInput");
+    document.getElementById(
+        "nameInput"
+    );
 
 var joinButton =
-    document.getElementById("joinButton");
+    document.getElementById(
+        "joinButton"
+    );
 
 var chatScreen =
-    document.getElementById("chatScreen");
+    document.getElementById(
+        "chatScreen"
+    );
 
 var myName =
     "";
@@ -409,16 +424,24 @@ var hasJoined =
    ============================================================ */
 
 var messages =
-    document.getElementById("messages");
+    document.getElementById(
+        "messages"
+    );
 
 var messageInput =
-    document.getElementById("messageInput");
+    document.getElementById(
+        "messageInput"
+    );
 
 var sendButton =
-    document.getElementById("sendButton");
+    document.getElementById(
+        "sendButton"
+    );
 
 var statusElement =
-    document.getElementById("status");
+    document.getElementById(
+        "status"
+    );
 
 
 /* ============================================================
@@ -431,14 +454,18 @@ function addMessage(
 ) {
 
     var div =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     div.className =
         "message";
 
 
     var nameSpan =
-        document.createElement("span");
+        document.createElement(
+            "span"
+        );
 
     nameSpan.className =
         "name";
@@ -448,7 +475,9 @@ function addMessage(
 
 
     var textSpan =
-        document.createElement("span");
+        document.createElement(
+            "span"
+        );
 
     textSpan.textContent =
         text;
@@ -479,7 +508,9 @@ function systemMessage(
 ) {
 
     var div =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     div.className =
         "message";
@@ -503,7 +534,7 @@ function systemMessage(
 
 
 /* ============================================================
-   RELAY
+   RELAY SETTINGS
    ============================================================ */
 
 var localDev =
@@ -526,8 +557,10 @@ var currentRoom =
 var signalWindow =
     null;
 
+
 var relayReady =
     false;
+
 
 var relayOpening =
     false;
@@ -574,7 +607,7 @@ function openRelay(
 
 
     /*
-     * Give every popup a unique window name.
+     * Give the popup a unique name.
      */
 
     var popupName =
@@ -653,6 +686,44 @@ function closeRelay() {
 
 
 /* ============================================================
+   SEND NAME TO RELAY
+   ============================================================ */
+
+function sendNameToRelay() {
+
+    if (
+        !signalWindow ||
+        signalWindow.closed
+    ) {
+
+        return;
+
+    }
+
+
+    signalWindow.postMessage(
+
+        {
+
+            type:
+                "set_name",
+
+            room:
+                currentRoom,
+
+            name:
+                myName
+
+        },
+
+        "*"
+
+    );
+
+}
+
+
+/* ============================================================
    RELAY MESSAGE HANDLER
    ============================================================ */
 
@@ -663,8 +734,8 @@ window.addEventListener(
     function(event) {
 
         /*
-         * Only accept messages from our
-         * current relay popup.
+         * Only accept messages from
+         * our relay popup.
          */
 
         if (
@@ -680,6 +751,11 @@ window.addEventListener(
         var msg =
             event.data || {};
 
+
+        /*
+         * Ignore messages for
+         * another room.
+         */
 
         if (
             msg.room &&
@@ -700,11 +776,9 @@ window.addEventListener(
             msg.peerEvent === "room_created"
         ) {
 
-            relayReady =
-                true;
-
             window.chatPeerId =
                 msg.peerId;
+
 
             statusElement.textContent =
                 "Waiting for users...";
@@ -713,6 +787,13 @@ window.addEventListener(
             systemMessage(
                 "Lobby created. Waiting for other users."
             );
+
+
+            /*
+             * Tell the relay who we are.
+             */
+
+            sendNameToRelay();
 
 
             return;
@@ -757,7 +838,7 @@ window.addEventListener(
 
 
         /* ====================================================
-           CONNECTED
+           JOINER CONNECTED
            ==================================================== */
 
         if (
@@ -768,22 +849,21 @@ window.addEventListener(
             relayReady =
                 true;
 
+
             window.chatPeerId =
                 msg.peerId;
+
 
             statusElement.textContent =
                 "Connected";
 
 
-            if (
-                msg.role === "joiner"
-            ) {
+            sendNameToRelay();
 
-                systemMessage(
-                    "You joined the lobby."
-                );
 
-            }
+            systemMessage(
+                "You joined the lobby."
+            );
 
 
             return;
@@ -805,8 +885,10 @@ window.addEventListener(
             ) {
 
                 systemMessage(
+
                     msg.name +
                     " joined the lobby."
+
                 );
 
             }
@@ -830,8 +912,10 @@ window.addEventListener(
             ) {
 
                 systemMessage(
+
                     msg.name +
                     " left the lobby."
+
                 );
 
             }
@@ -850,10 +934,11 @@ window.addEventListener(
         ) {
 
             /*
-             * The sender displays their own message
-             * immediately, so the relay only needs
-             * to display messages coming back from
-             * other users.
+             * The sender already displayed
+             * their own message.
+             *
+             * Therefore ignore our own
+             * copy from the relay.
              */
 
             if (
@@ -862,8 +947,13 @@ window.addEventListener(
             ) {
 
                 addMessage(
-                    msg.name,
-                    msg.text
+
+                    msg.name ||
+                    "Unknown",
+
+                    msg.text ||
+                    ""
+
                 );
 
             }
@@ -887,8 +977,10 @@ window.addEventListener(
 
 
             systemMessage(
+
                 msg.detail ||
                 "Unknown relay error."
+
             );
 
 
@@ -935,13 +1027,6 @@ function sendChat() {
     }
 
 
-    /*
-     * Give our own message an ID.
-     *
-     * The relay sends the message back to us
-     * as well, but we ignore that copy.
-     */
-
     var message = {
 
         type:
@@ -963,7 +1048,7 @@ function sendChat() {
 
 
     /*
-     * Show our message immediately.
+     * Display our own message immediately.
      */
 
     addMessage(
@@ -1020,6 +1105,10 @@ function joinLobby() {
 
     currentRoom =
         "main";
+
+
+    relayReady =
+        false;
 
 
     statusElement.textContent =
