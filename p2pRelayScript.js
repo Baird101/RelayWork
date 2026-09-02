@@ -414,7 +414,28 @@ function setupConnection(
                 );
 
             }
+            
+            if (
+                window.opener &&
+                !window.opener.closed
+            ) {
 
+                window.opener.postMessage(
+
+                    {
+                        type:
+                            "relay_connected",
+
+                        room:
+                            room
+
+                    },
+
+                    "*"
+
+                );
+
+            }
         }
 
     );
