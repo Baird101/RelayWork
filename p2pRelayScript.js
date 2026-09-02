@@ -12,8 +12,8 @@ var room =
 var peer =
     null;
 
-var peerConnection =
-    null;
+var peerConnections =
+    [];
 
 var outboundQueue =
     [];
@@ -154,21 +154,43 @@ function sendSignal(
 ) {
 
     if (
-        peerConnection &&
-        peerConnection.open
+        peerConnections.length ===
+        0
     ) {
-
-        peerConnection.send(
-            payload
-        );
-
-    }
-
-    else {
 
         outboundQueue.push(
             payload
         );
+
+        return;
+
+    }
+
+
+    /*
+     * Send the signal to every connected
+     * relay peer.
+     */
+
+    for (
+        var i = 0;
+        i < peerConnections.length;
+        i++
+    ) {
+
+        var connection =
+            peerConnections[i];
+
+        if (
+            connection &&
+            connection.open
+        ) {
+
+            connection.send(
+                payload
+            );
+
+        }
 
     }
 
@@ -182,8 +204,8 @@ function sendSignal(
 function flushQueue() {
 
     if (
-        !peerConnection ||
-        !peerConnection.open
+        peerConnections.length ===
+        0
     ) {
 
         return;
@@ -192,14 +214,35 @@ function flushQueue() {
 
 
     while (
-        outboundQueue.length > 0
+        outboundQueue.length >
+        0
     ) {
 
-        peerConnection.send(
+        var payload =
+            outboundQueue.shift();
 
-            outboundQueue.shift()
 
-        );
+        for (
+            var i = 0;
+            i < peerConnections.length;
+            i++
+        ) {
+
+            var connection =
+                peerConnections[i];
+
+            if (
+                connection &&
+                connection.open
+            ) {
+
+                connection.send(
+                    payload
+                );
+
+            }
+
+        }
 
     }
 
@@ -393,31 +436,119 @@ function createLobby() {
 
     peer.on(
 
-        "open",
+    "connection",
 
-        function(id) {
+    function(connection) {
 
-            setStatus(
-                "Lobby created!"
-            );
-
-
-            setLobby(
-                "Lobby: " +
-                id +
-                "\nWaiting for another user..."
-            );
+        peerConnections.push(
+            connection
+        );
 
 
-            notifyClient(
-                "room_created",
-                "host"
-            );
+        connection.on(
 
-        }
+            "open",
 
-    );
+            function() {
 
+                setStatus(
+                    "User connected!"
+                );
+
+
+                setLobby(
+
+                    "Lobby: " +
+                    room +
+                    "\n" +
+                    peerConnections.length +
+                    " users connected."
+
+                );
+
+
+                notifyClient(
+                    "connected_as_host",
+                    "host"
+                );
+
+
+                flushQueue();
+
+            }
+
+        );
+
+
+        connection.on(
+
+            "data",
+
+            function(data) {
+
+                notifySignal(
+                    data
+                );
+
+            }
+
+        );
+
+
+        connection.on(
+
+            "close",
+
+            function() {
+
+                var index =
+                    peerConnections.indexOf(
+                        connection
+                    );
+
+
+                if (
+                    index !== -1
+                ) {
+
+                    peerConnections.splice(
+                        index,
+                        1
+                    );
+
+                }
+
+            }
+
+        );
+
+
+        connection.on(
+
+            "error",
+
+            function(error) {
+
+                notifyClient(
+
+                    "error",
+
+                    null,
+
+                    error.message ||
+                    "Connection error.",
+
+                    error.type || ""
+
+                );
+
+            }
+
+        );
+
+    }
+
+);
 
     /*
      * Another browser connected.
