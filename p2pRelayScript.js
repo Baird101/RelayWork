@@ -338,21 +338,17 @@ function setupConnection(
             );
 
 
-            /* =================================================
-               JOINER RELAY
-               ================================================= */
+            /*
+            * Joiner relay:
+            *
+            * Its connection to the host
+            * is now ready.
+            */
 
             if (
                 action ===
                 "join"
             ) {
-
-                /*
-                 * This relay is the joiner's relay.
-                 *
-                 * Tell the joiner's MAIN page that
-                 * its connection to the host is ready.
-                 */
 
                 notifyClient(
 
@@ -365,44 +361,6 @@ function setupConnection(
                     "",
 
                     peer.id
-
-                );
-
-            }
-
-
-            /* =================================================
-               HOST RELAY
-               ================================================= */
-
-            if (
-                action ===
-                "create"
-            ) {
-
-                /*
-                 * A new PeerJS connection has opened.
-                 *
-                 * This means somebody successfully
-                 * joined the host's lobby.
-                 *
-                 * IMPORTANT:
-                 * Tell the HOST main page immediately.
-                 */
-
-                notifyClient(
-
-                    "user_joined",
-
-                    "host",
-
-                    "",
-
-                    user
-                        ? user.name
-                        : "",
-
-                    connection.peer
 
                 );
 
@@ -449,15 +407,45 @@ function setupConnection(
 
 
                 /*
-                 * If this is a joiner connection,
-                 * notify the host that the name
-                 * is now known.
-                 */
+                * A JOINER has just told the host
+                * who they are.
+                */
 
                 if (
                     action ===
                     "create"
                 ) {
+
+                    var joinedEvent = {
+
+                        type:
+                            "relay_event",
+
+                        room:
+                            room,
+
+                        peerEvent:
+                            "user_joined",
+
+                        role:
+                            "joiner",
+
+                        detail:
+                            "",
+
+                        name:
+                            data.name ||
+                            "Unknown",
+
+                        peerId:
+                            connection.peer
+
+                    };
+
+
+                    /*
+                    * Tell the HOST MAIN page.
+                    */
 
                     notifyClient(
 
@@ -467,11 +455,26 @@ function setupConnection(
 
                         "",
 
-                        user
-                            ? user.name
-                            : data.name || "",
+                        data.name ||
+                            "Unknown",
 
                         connection.peer
+
+                    );
+
+
+                    /*
+                    * Tell EVERY OTHER JOINER.
+                    *
+                    * Do not send it back to the
+                    * joiner who just announced itself.
+                    */
+
+                    broadcast(
+
+                        joinedEvent,
+
+                        connection
 
                     );
 
