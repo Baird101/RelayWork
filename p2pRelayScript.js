@@ -1,4 +1,3 @@
-```javascript
 var params =
     new URLSearchParams(
         window.location.search
@@ -629,23 +628,26 @@ window.addEventListener(
                 }
             );
 
+            return;
+
         }
-            if (
-    data.type === "set_name"
-) {
 
-    /*
-     * The host itself does not have a
-     * PeerJS connection entry, so store
-     * its name separately.
-     */
+        if (
+            data.type === "set_name"
+        ) {
 
-    window.myName =
-        data.name || "";
+            /*
+             * The host itself does not have a
+             * PeerJS connection entry, so store
+             * its name separately.
+             */
 
-    return;
+            window.hostName =
+                data.name || "";
 
-}
+            return;
+
+        }
 
     }
 
@@ -1107,4 +1109,3 @@ else {
     );
 
 }
-```
