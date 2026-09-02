@@ -434,7 +434,6 @@
 				? "./p2pRelay.html"
 				: "https://baird101.github.io/RelayWork/p2pRelay.html";
 
-
 		var signalWindow =
 			null;
 
@@ -757,62 +756,58 @@
 		   ===================================================== */
 
 		function sendSignal(
-			targetPeerId,
-			payload
-		) {
+    targetPeerId,
+    payload
+) {
 
-			var message =
-				{
+    var message =
+        {
 
-					type:
-						"signal_send",
+            type:
+                "signal_send",
 
-					room:
-						currentRoom,
+            room:
+                currentRoom,
 
-					target:
-						targetPeerId,
+            target:
+                targetPeerId,
 
-					from:
-						myPeerId,
+            from:
+                myPeerId,
 
-					payload:
-						payload
+            payload:
+                payload
 
-				};
-
-
-			if (
-				signalWindow &&
-				!signalWindow.closed &&
-				relayReady
-			) {
-
-				try {
-
-					signalWindow.postMessage(
-						message,
-						"*"
-					);
-
-					return;
-
-				}
-
-				catch (error) {}
-
-			}
+        };
 
 
-			/*
-			 * Relay isn't ready yet.
-			 */
+    if (
+        signalWindow &&
+        !signalWindow.closed &&
+        relayReady
+    ) {
 
-			signalQueue.push(
-				message
-			);
+        try {
 
-		}
+            signalWindow.postMessage(
+                message,
+                "*"
+            );
+
+            return;
+
+        }
+
+        catch (error) {}
+
+    }
+
+
+    signalQueue.push(
+        message
+    );
+
+}
 
 
 		/* =====================================================
