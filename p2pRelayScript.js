@@ -1,99 +1,72 @@
 var params =
-new URLSearchParams(
-window.location.search
-);
+    new URLSearchParams(
+        window.location.search
+    );
 
 var action =
-params.get("action");
+    params.get("action");
 
 var room =
-params.get("room");
+    params.get("room");
 
 var peer =
-null;
+    null;
 
 /*
-
-* Every PeerJS connection gets
-* an entry here.
-  */
-  var connections =
-  [];
+ * Every PeerJS connection gets an entry here.
+ */
+var connections =
+    [];
 
 /*
-
-* The host's name.
-*
-* Only used by the host relay.
-  */
-  var hostName =
-  "";
+ * The host's name.
+ */
+var hostName =
+    "";
 
 /*
-
-* Prevent duplicate handling of
-* the same connection.
-  */
-  var connectionIds =
-  [];
-
-/* ============================================================
-UI
-============================================================ */
+ * Prevent duplicate connections.
+ */
+var connectionIds =
+    [];
 
 function setStatus(text) {
 
-var element =
-    document.getElementById("status");
+    var element =
+        document.getElementById("status");
 
-if (element) {
-
-    element.textContent =
-        text;
-
-}
+    if (element) {
+        element.textContent =
+            text;
+    }
 
 }
 
 function setLobby(text) {
 
-var element =
-    document.getElementById("lobby");
+    var element =
+        document.getElementById("lobby");
 
-if (element) {
-
-    element.textContent =
-        text;
-
-}
+    if (element) {
+        element.textContent =
+            text;
+    }
 
 }
-
-/* ============================================================
-SEND EVENT TO MAIN PAGE
-============================================================ */
 
 function notifyClient(
-peerEvent,
-role,
-detail,
-name,
-peerId
+    peerEvent,
+    role,
+    detail,
+    name,
+    peerId
 ) {
 
-if (
-    !window.opener ||
-    window.opener.closed
-) {
+    if (!window.opener || window.opener.closed) {
+        return;
+    }
 
-    return;
-
-}
-
-
-window.opener.postMessage(
-
-    {
+    window.opener.postMessage({
 
         type:
             "relay_event",
@@ -116,577 +89,593 @@ window.opener.postMessage(
         peerId:
             peerId || ""
 
-    },
-
-    "*"
-
-);
+    }, "*");
 
 }
-
-/* ============================================================
-SEND DATA TO MAIN PAGE
-============================================================ */
 
 function notifyMain(data) {
 
-if (
-    !window.opener ||
-    window.opener.closed
-) {
+    if (!window.opener || window.opener.closed) {
+        return;
+    }
 
-    return;
-
-}
-
-
-window.opener.postMessage(
-    data,
-    "*"
-);
+    window.opener.postMessage(
+        data,
+        "*"
+    );
 
 }
 
-/* ============================================================
-ADD CONNECTION
-============================================================ */
+function addConnection(connection) {
 
-function addConnection(
-connection
-) {
+    if (connectionIds.indexOf(connection.peer) !== -1) {
+        return;
+    }
 
-
-/*
- * Do not add the same connection
- * more than once.
- */
-
-if (
-    connectionIds.indexOf(
+    connectionIds.push(
         connection.peer
-    ) !== -1
-) {
+    );
 
-    return;
+    connections.push({
 
-}
+        connection:
+            connection,
 
+        name:
+            "",
 
-connectionIds.push(
-    connection.peer
-);
-
-
-connections.push({
-
-    connection:
-        connection,
-
-    name:
-        "",
-
-    peerId:
-        connection.peer
-
-});
-
-
-}
-
-/* ============================================================
-FIND CONNECTION
-============================================================ */
-
-function findConnection(
-connection
-) {
-
-
-for (
-    var i = 0;
-    i < connections.length;
-    i++
-) {
-
-    if (
-        connections[i].connection ===
-        connection
-    ) {
-
-        return connections[i];
-
-    }
-
-}
-
-
-return null;
-
-
-}
-
-/* ============================================================
-REMOVE CONNECTION
-============================================================ */
-
-function removeConnection(
-connection
-) {
-
-
-for (
-    var i = 0;
-    i < connections.length;
-    i++
-) {
-
-    if (
-        connections[i].connection ===
-        connection
-    ) {
-
-        var user =
-            connections[i];
-
-
-        connections.splice(
-            i,
-            1
-        );
-
-
-        var idIndex =
-            connectionIds.indexOf(
-                connection.peer
-            );
-
-
-        if (
-            idIndex !== -1
-        ) {
-
-            connectionIds.splice(
-                idIndex,
-                1
-            );
-
-        }
-
-
-        return user;
-
-    }
-
-}
-
-
-return null;
-
-
-}
-
-/* ============================================================
-UPDATE UI
-============================================================ */
-
-function updateLobbyDisplay() {
-
-
-setStatus(
-
-    "Connected users: " +
-    connections.length
-
-);
-
-
-setLobby(
-
-    "Lobby: " +
-    room +
-    "\nUsers connected: " +
-    connections.length
-
-);
-
-
-}
-
-/* ============================================================
-BROADCAST
-============================================================ */
-
-function broadcast(
-data,
-exceptConnection
-) {
-
-
-for (
-    var i = 0;
-    i < connections.length;
-    i++
-) {
-
-    var connection =
-        connections[i].connection;
-
-
-    if (
-        connection ===
-        exceptConnection
-    ) {
-
-        continue;
-
-    }
-
-
-    if (
-        connection.open
-    ) {
-
-        try {
-
-            connection.send(
-                data
-            );
-
-        }
-
-        catch (error) {}
-
-    }
-
-}
-
-
-}
-
-/* ============================================================
-SEND SIGNAL TO ONE JOINER
-============================================================ */
-
-function sendSignalToConnection(
-connection,
-payload
-) {
-
-
-if (
-    !connection ||
-    !connection.open
-) {
-
-    return;
-
-}
-
-
-try {
-
-    connection.send({
-
-        type:
-            "signal_data",
-
-        room:
-            room,
-
-        payload:
-            payload
+        peerId:
+            connection.peer
 
     });
 
 }
 
-catch (error) {}
+function findConnection(connection) {
 
+    for (
+        var i = 0;
+        i < connections.length;
+        i++
+    ) {
+
+        if (connections[i].connection === connection) {
+            return connections[i];
+        }
+
+    }
+
+    return null;
 
 }
 
-/* ============================================================
-SET UP ONE CONNECTION
-============================================================ */
+function removeConnection(connection) {
 
-function setupConnection(
-connection
-) {
+    for (
+        var i = 0;
+        i < connections.length;
+        i++
+    ) {
 
+        if (connections[i].connection === connection) {
 
-addConnection(
-    connection
-);
+            var user =
+                connections[i];
 
-
-var user =
-    findConnection(
-        connection
-    );
-
-
-/* ========================================================
-   CONNECTION OPEN
-   ======================================================== */
-
-connection.on(
-
-    "open",
-
-    function() {
-
-        updateLobbyDisplay();
-
-
-        /*
-         * IMPORTANT:
-         *
-         * Only a JOINER relay tells its
-         * main page that its connection
-         * to the host relay is ready.
-         *
-         * The HOST relay stays alive.
-         */
-
-        if (
-            action ===
-            "join"
-        ) {
-
-            notifyClient(
-
-                "connected_as_joiner",
-
-                "joiner",
-
-                "",
-
-                "",
-
-                peer.id
-
+            connections.splice(
+                i,
+                1
             );
+
+            var idIndex =
+                connectionIds.indexOf(
+                    connection.peer
+                );
+
+            if (idIndex !== -1) {
+
+                connectionIds.splice(
+                    idIndex,
+                    1
+                );
+
+            }
+
+            return user;
 
         }
 
     }
 
-);
+    return null;
 
+}
 
-/* ========================================================
-   DATA
-   ======================================================== */
+function updateLobbyDisplay() {
 
-connection.on(
+    setStatus(
+        "Connected users: " +
+        connections.length
+    );
 
-    "data",
+    setLobby(
+        "Lobby: " +
+        room +
+        "\nUsers connected: " +
+        connections.length
+    );
 
-    function(data) {
+}
 
-        if (!data) {
+function broadcast(data, exceptConnection) {
 
-            return;
+    for (
+        var i = 0;
+        i < connections.length;
+        i++
+    ) {
+
+        var connection =
+            connections[i].connection;
+
+        if (connection === exceptConnection) {
+            continue;
+        }
+
+        if (connection.open) {
+
+            try {
+                connection.send(
+                    data
+                );
+            }
+
+            catch (error) {}
 
         }
 
+    }
 
-        /* =================================================
-           SIGNALING DATA
-           ================================================= */
+}
 
-        if (
-            data.type ===
-            "signal_send"
-        ) {
+function setupConnection(connection) {
 
-            /*
-             * A JOINER sends its WebRTC signaling
-             * data to the HOST relay.
-             *
-             * The host relay forwards it to
-             * every other connection.
-             */
+    addConnection(
+        connection
+    );
 
-            if (
-                action ===
-                "create"
-            ) {
+    var user =
+        findConnection(
+            connection
+        );
 
-                broadcast(
+    connection.on(
+        "open",
+        function() {
 
-                    {
-
-                        type:
-                            "signal_data",
-
-                        room:
-                            room,
-
-                        payload:
-                            data.payload
-
-                    },
-
-                    connection
-
-                );
-
-            }
-
+            updateLobbyDisplay();
 
             /*
-             * A HOST's main page sends signaling
-             * data through its relay.
-             *
-             * Send it to every connected joiner.
+             * A JOINER tells its own Main.html
+             * that the host connection is ready.
              */
 
-            else if (
-                action ===
-                "join"
-            ) {
-
-                /*
-                 * This case is normally not used
-                 * because a joiner is connected to
-                 * the host, but forwarding it makes
-                 * the relay symmetric.
-                 */
-
-                broadcast(
-
-                    {
-
-                        type:
-                            "signal_data",
-
-                        room:
-                            room,
-
-                        payload:
-                            data.payload
-
-                    },
-
-                    connection
-
-                );
-
-            }
-
-
-            return;
-
-        }
-
-
-        /* =================================================
-           SET NAME
-           ================================================= */
-
-        if (
-            data.type ===
-            "set_name"
-        ) {
-
-            if (user) {
-
-                user.name =
-                    data.name ||
-                    "";
-
-            }
-
-
-            /*
-             * A JOINER has announced its name
-             * to the HOST relay.
-             */
-
-            if (
-                action ===
-                "create"
-            ) {
+            if (action === "join") {
 
                 notifyClient(
-
-                    "user_joined",
-
+                    "connected",
                     "joiner",
-
                     "",
-
-                    data.name ||
-                    "Unknown",
-
-                    connection.peer
-
+                    "",
+                    peer.id
                 );
 
+            }
+
+        }
+    );
+
+    connection.on(
+        "data",
+        function(data) {
+
+            if (!data) {
+                return;
+            }
+
+            if (data.type === "set_name") {
+
+                if (user) {
+
+                    user.name =
+                        data.name ||
+                        "";
+
+                }
 
                 /*
-                 * Tell all OTHER joiners.
+                 * Only the HOST relay handles
+                 * joiner names.
                  */
 
-                broadcast(
+                if (action === "create") {
 
-                    {
+                    notifyClient(
+                        "user_joined",
+                        "joiner",
+                        "",
+                        data.name || "Unknown",
+                        connection.peer
+                    );
+
+                    /*
+                     * Tell EVERY OTHER JOINER.
+                     */
+
+                    broadcast({
+                        type: "relay_event",
+                        room: room,
+                        peerEvent: "user_joined",
+                        role: "joiner",
+                        detail: "",
+                        name: data.name || "Unknown",
+                        peerId: connection.peer
+                    }, connection);
+
+                }
+
+                return;
+
+            }
+
+            if (data.type === "signal_send") {
+
+                if (action === "create") {
+
+                    broadcast({
 
                         type:
-                            "relay_event",
+                            "signal_data",
 
                         room:
                             room,
 
-                        peerEvent:
-                            "user_joined",
+                        payload:
+                            data.payload
 
-                        role:
-                            "joiner",
+                    }, connection);
 
-                        detail:
-                            "",
+                }
 
-                        name:
-                            data.name ||
-                            "Unknown",
+                else if (action === "join") {
 
-                        peerId:
-                            connection.peer
+                    broadcast({
 
-                    },
+                        type:
+                            "signal_data",
 
+                        room:
+                            room,
+
+                        payload:
+                            data.payload
+
+                    }, connection);
+
+                }
+
+                return;
+
+            }
+
+            if (data.type === "chat_send") {
+
+                if (user) {
+
+                    user.name =
+                        data.name ||
+                        user.name ||
+                        "";
+
+                }
+
+                var message = {
+
+                    type:
+                        "chat",
+
+                    room:
+                        room,
+
+                    name:
+                        data.name ||
+                        (
+                            user
+                                ? user.name
+                                : ""
+                        ) ||
+                        "Unknown",
+
+                    text:
+                        data.text ||
+                        "",
+
+                    senderId:
+                        data.senderId ||
+                        ""
+
+                };
+
+                broadcast(
+                    message,
                     connection
+                );
 
+                notifyMain(
+                    message
+                );
+
+                return;
+
+            }
+
+            if (
+                data.type === "relay_event" &&
+                (
+                    data.peerEvent === "user_joined" ||
+                    data.peerEvent === "user_left"
+                )
+            ) {
+
+                notifyMain(
+                    data
+                );
+
+                return;
+
+            }
+
+            broadcast(
+                data,
+                connection
+            );
+
+            notifyMain(
+                data
+            );
+
+        }
+    );
+
+    connection.on(
+        "close",
+        function() {
+
+            var oldUser =
+                removeConnection(
+                    connection
+                );
+
+            updateLobbyDisplay();
+
+            /*
+             * HOST RELAY:
+             *
+             * A joiner disconnected.
+             *
+             * Tell the host.
+             */
+
+            if (action === "create") {
+
+                var leftEvent = {
+
+                    type:
+                        "relay_event",
+
+                    room:
+                        room,
+
+                    peerEvent:
+                        "user_left",
+
+                    role:
+                        "joiner",
+
+                    detail:
+                        "",
+
+                    name:
+                        oldUser
+                            ? oldUser.name
+                            : "Unknown",
+
+                    peerId:
+                        connection.peer
+
+                };
+
+                /*
+                 * Tell the HOST Main.html.
+                 */
+
+                notifyMain(
+                    leftEvent
+                );
+
+                /*
+                 * Tell EVERY OTHER JOINER.
+                 */
+
+                broadcast(
+                    leftEvent
                 );
 
             }
 
+            /*
+             * JOINER RELAY:
+             *
+             * The host connection died.
+             */
 
-            return;
+            if (action === "join") {
 
-        }
-
-
-        /* =================================================
-           CHAT SEND
-           ================================================= */
-
-        if (
-            data.type ===
-            "chat_send"
-        ) {
-
-            if (user) {
-
-                user.name =
-                    data.name ||
-                    user.name ||
-                    "";
+                notifyClient(
+                    "user_left",
+                    null,
+                    "",
+                    "",
+                    connection.peer
+                );
 
             }
 
+        }
+    );
+
+    connection.on(
+        "error",
+        function(error) {
+
+            notifyClient(
+                "error",
+                null,
+                error.message ||
+                "Connection error.",
+                "",
+                connection.peer
+            );
+
+        }
+    );
+
+}
+
+window.addEventListener(
+    "message",
+    function(event) {
+
+        /*
+         * Only accept messages from our
+         * parent Main.html.
+         */
+
+        if (!window.opener || event.source !== window.opener) {
+            return;
+        }
+
+        var data =
+            event.data || {};
+
+        if (data.room && data.room !== room) {
+            return;
+        }
+
+        if (data.type === "set_name") {
+
+            /*
+             * HOST
+             */
+
+            if (action === "create") {
+
+                hostName =
+                    data.name ||
+                    "";
+
+                return;
+
+            }
+
+            /*
+             * JOINER
+             */
+
+            if (action === "join") {
+
+                if (connections.length > 0) {
+
+                    var hostConnection =
+                        connections[0].connection;
+
+                    if (hostConnection.open) {
+
+                        hostConnection.send({
+
+                            type:
+                                "set_name",
+
+                            name:
+                                data.name ||
+                                ""
+
+                        });
+
+                    }
+
+                }
+
+                return;
+
+            }
+
+        }
+
+        if (data.type === "signal_send") {
+
+            if (action === "create") {
+
+                broadcast({
+
+                    type:
+                        "signal_data",
+
+                    room:
+                        room,
+
+                    payload:
+                        data.payload
+
+                });
+
+                return;
+
+            }
+
+            if (action === "join") {
+
+                if (connections.length > 0) {
+
+                    var hostConnection =
+                        connections[0].connection;
+
+                    if (hostConnection.open) {
+
+                        hostConnection.send({
+
+                            type:
+                                "signal_send",
+
+                            room:
+                                room,
+
+                            payload:
+                                data.payload
+
+                        });
+
+                    }
+
+                }
+
+                return;
+
+            }
+
+        }
+
+        if (data.type === "chat_send") {
 
             var message = {
 
@@ -698,11 +687,7 @@ connection.on(
 
                 name:
                     data.name ||
-                    (
-                        user
-                        ? user.name
-                        : ""
-                    ) ||
+                    hostName ||
                     "Unknown",
 
                 text:
@@ -715,951 +700,353 @@ connection.on(
 
             };
 
-
-            /*
-             * Send to everyone else.
-             */
-
             broadcast(
-
-                message,
-
-                connection
-
+                message
             );
-
-
-            /*
-             * Send to this relay's
-             * own main page.
-             */
 
             notifyMain(
                 message
             );
 
-
             return;
 
         }
 
-
-        /* =================================================
-           NORMAL DATA
-           ================================================= */
-
         broadcast(
-
-            data,
-
-            connection
-
+            data
         );
-
 
         notifyMain(
             data
         );
 
     }
-
 );
-
-
-/* ========================================================
-   CONNECTION CLOSED
-   ======================================================== */
-
-connection.on(
-
-    "close",
-
-    function() {
-
-        var oldUser =
-            removeConnection(
-                connection
-            );
-
-
-        updateLobbyDisplay();
-
-
-        /*
-         * The HOST needs to know when a
-         * JOINER leaves.
-         */
-
-        if (
-            action ===
-            "create"
-        ) {
-
-            notifyClient(
-
-                "user_left",
-
-                "host",
-
-                "",
-
-                oldUser
-                    ? oldUser.name
-                    : "",
-
-                connection.peer
-
-            );
-
-        }
-
-
-        /*
-         * A JOINER's connection closing
-         * means its host connection died.
-         */
-
-        if (
-            action ===
-            "join"
-        ) {
-
-            notifyClient(
-
-                "user_left",
-
-                null,
-
-                "",
-
-                "",
-
-                connection.peer
-
-            );
-
-        }
-
-    }
-
-);
-
-
-/* ========================================================
-   CONNECTION ERROR
-   ======================================================== */
-
-connection.on(
-
-    "error",
-
-    function(error) {
-
-        /*
-         * Do not immediately destroy the relay.
-         */
-
-        notifyClient(
-
-            "error",
-
-            null,
-
-            error.message ||
-            "Connection error.",
-
-            "",
-
-            connection.peer
-
-        );
-
-    }
-
-);
-
-
-}
-
-/* ============================================================
-RECEIVE MESSAGE FROM MAIN PAGE
-============================================================ */
-
-window.addEventListener(
-
-
-"message",
-
-function(event) {
-
-    /*
-     * Only accept messages from
-     * our parent MAIN page.
-     */
-
-    if (
-        !window.opener ||
-        event.source !==
-        window.opener
-    ) {
-
-        return;
-
-    }
-
-
-    var data =
-        event.data || {};
-
-
-    if (
-        data.room &&
-        data.room !==
-        room
-    ) {
-
-        return;
-
-    }
-
-
-    /* ====================================================
-       SET NAME
-       ==================================================== */
-
-    if (
-        data.type ===
-        "set_name"
-    ) {
-
-        /*
-         * HOST:
-         *
-         * Store the host's name.
-         */
-
-        if (
-            action ===
-            "create"
-        ) {
-
-            hostName =
-                data.name ||
-                "";
-
-            return;
-
-        }
-
-
-        /*
-         * JOINER:
-         *
-         * Send the name through the
-         * PeerJS connection to the host.
-         */
-
-        if (
-            action ===
-            "join"
-        ) {
-
-            if (
-                connections.length > 0
-            ) {
-
-                var hostConnection =
-                    connections[0].connection;
-
-
-                if (
-                    hostConnection.open
-                ) {
-
-                    hostConnection.send({
-
-                        type:
-                            "set_name",
-
-                        name:
-                            data.name ||
-                            ""
-
-                    });
-
-                }
-
-            }
-
-            return;
-
-        }
-
-    }
-
-
-    /* ====================================================
-       SIGNAL SEND
-       ==================================================== */
-
-    if (
-        data.type ===
-        "signal_send"
-    ) {
-
-        /*
-         * HOST:
-         *
-         * Send the host's WebRTC signal
-         * to every joiner.
-         */
-
-        if (
-            action ===
-            "create"
-        ) {
-
-            broadcast(
-
-                {
-
-                    type:
-                        "signal_data",
-
-                    room:
-                        room,
-
-                    payload:
-                        data.payload
-
-                }
-
-            );
-
-            return;
-
-        }
-
-
-        /*
-         * JOINER:
-         *
-         * Send the joiner's WebRTC signal
-         * through the connection to the host.
-         */
-
-        if (
-            action ===
-            "join"
-        ) {
-
-            if (
-                connections.length > 0
-            ) {
-
-                var hostConnection =
-                    connections[0].connection;
-
-
-                if (
-                    hostConnection.open
-                ) {
-
-                    hostConnection.send({
-
-                        type:
-                            "signal_send",
-
-                        room:
-                            room,
-
-                        payload:
-                            data.payload
-
-                    });
-
-                }
-
-            }
-
-            return;
-
-        }
-
-    }
-
-
-    /* ====================================================
-       CHAT SEND
-       ==================================================== */
-
-    if (
-        data.type ===
-        "chat_send"
-    ) {
-
-        var message = {
-
-            type:
-                "chat",
-
-            room:
-                room,
-
-            name:
-                data.name ||
-                hostName ||
-                "Unknown",
-
-            text:
-                data.text ||
-                "",
-
-            senderId:
-                data.senderId ||
-                ""
-
-        };
-
-
-        /*
-         * Broadcast to every PeerJS
-         * connection.
-         */
-
-        broadcast(
-            message
-        );
-
-
-        /*
-         * Send back to the host's
-         * main page.
-         */
-
-        notifyMain(
-            message
-        );
-
-
-        return;
-
-    }
-
-
-    /* ====================================================
-       OTHER DATA
-       ==================================================== */
-
-    broadcast(
-        data
-    );
-
-
-    notifyMain(
-        data
-    );
-
-}
-
-
-);
-
-/* ============================================================
-CREATE LOBBY
-============================================================ */
 
 function createLobby() {
 
-
-setStatus(
-    "Connecting to PeerJS..."
-);
-
-
-setLobby(
-    "Creating lobby: " +
-    room
-);
-
-
-try {
-
-    /*
-     * The host owns the room ID.
-     */
-
-    peer =
-        new Peer(
-            room
-        );
-
-}
-
-catch (error) {
-
-    notifyClient(
-
-        "error",
-
-        null,
-
-        error.message ||
-        "Could not start PeerJS."
-
+    setStatus(
+        "Connecting to PeerJS..."
     );
 
-    return;
+    setLobby(
+        "Creating lobby: " +
+        room
+    );
 
-}
+    try {
 
-
-/* ========================================================
-   PEER OPEN
-   ======================================================== */
-
-peer.on(
-
-    "open",
-
-    function(id) {
-
-        setStatus(
-            "Lobby created!"
-        );
-
-
-        setLobby(
-
-            "Lobby: " +
-            id +
-            "\nWaiting for users..."
-
-        );
-
-
-        /*
-         * Tell the host's main page that
-         * its relay successfully owns the room.
-         */
-
-        notifyClient(
-
-            "room_created",
-
-            "host",
-
-            "",
-
-            "",
-
-            id
-
-        );
-
-    }
-
-);
-
-
-/* ========================================================
-   NEW USER CONNECTION
-   ======================================================== */
-
-peer.on(
-
-    "connection",
-
-    function(connection) {
-
-        setupConnection(
-            connection
-        );
-
-    }
-
-);
-
-
-/* ========================================================
-   PEER ERROR
-   ======================================================== */
-
-peer.on(
-
-    "error",
-
-    function(error) {
-
-        /*
-         * This should NOT normally happen for
-         * a real host unless another host is
-         * already using the room ID.
-         */
-
-        if (
-            error.type ===
-            "unavailable-id"
-        ) {
-
-            setStatus(
-                "Lobby already exists."
-            );
-
-
-            setLobby(
-                "Another relay already owns " +
+        peer =
+            new Peer(
                 room
             );
 
+    }
 
-            notifyClient(
-
-                "lobby_exists",
-
-                "joiner",
-
-                error.message ||
-                "Lobby already exists.",
-
-                "",
-
-                ""
-
-            );
-
-
-            /*
-             * Important:
-             *
-             * Do NOT call peer.destroy()
-             * here.
-             *
-             * The main page will close this
-             * temporary relay and open a join
-             * relay.
-             */
-
-            return;
-
-        }
-
+    catch (error) {
 
         notifyClient(
-
             "error",
-
             null,
-
             error.message ||
-            "PeerJS error.",
-
-            "",
-            ""
-
+            "Could not start PeerJS."
         );
+
+        return;
 
     }
 
-);
+    peer.on(
+        "open",
+        function(id) {
 
+            setStatus(
+                "Lobby created!"
+            );
 
-/* ========================================================
-   DISCONNECTED
-   ======================================================== */
+            setLobby(
+                "Lobby: " +
+                id +
+                "\nWaiting for users..."
+            );
 
-peer.on(
+            notifyClient(
+                "room_created",
+                "host",
+                "",
+                "",
+                id
+            );
 
-    "disconnected",
+        }
+    );
 
-    function() {
+    peer.on(
+        "connection",
+        function(connection) {
 
-        /*
-         * The HOST should attempt to reconnect
-         * because it owns the lobby ID.
-         */
+            setupConnection(
+                connection
+            );
 
-        setStatus(
-            "Reconnecting to PeerJS..."
-        );
+        }
+    );
 
+    peer.on(
+        "error",
+        function(error) {
 
-        setLobby(
-            "Lobby: " +
-            room +
-            "\nReconnecting..."
-        );
+            if (error.type === "unavailable-id") {
 
+                setStatus(
+                    "Lobby already exists."
+                );
 
-        try {
+                setLobby(
+                    "Another relay already owns " +
+                    room
+                );
 
-            if (
-                peer &&
-                !peer.destroyed
-            ) {
+                notifyClient(
+                    "lobby_exists",
+                    "joiner",
+                    error.message ||
+                    "Lobby already exists.",
+                    "",
+                    ""
+                );
 
-                peer.reconnect();
+                return;
 
             }
 
+            notifyClient(
+                "error",
+                null,
+                error.message ||
+                "PeerJS error.",
+                "",
+                ""
+            );
+
         }
+    );
 
-        catch (error) {}
+    peer.on(
+        "disconnected",
+        function() {
 
-    }
+            setStatus(
+                "Reconnecting to PeerJS..."
+            );
 
-);
+            setLobby(
+                "Lobby: " +
+                room +
+                "\nReconnecting..."
+            );
 
+            try {
+
+                if (peer && !peer.destroyed) {
+                    peer.reconnect();
+                }
+
+            }
+
+            catch (error) {}
+
+        }
+    );
 
 }
-
-/* ============================================================
-JOIN EXISTING LOBBY
-============================================================ */
 
 function joinLobby() {
 
-
-setStatus(
-    "Joining lobby..."
-);
-
-
-setLobby(
-    "Connecting to " +
-    room
-);
-
-
-try {
-
-    /*
-     * Joiners receive their own unique
-     * PeerJS ID.
-     */
-
-    peer =
-        new Peer();
-
-}
-
-catch (error) {
-
-    notifyClient(
-
-        "error",
-
-        null,
-
-        error.message ||
-        "Could not start PeerJS."
-
+    setStatus(
+        "Joining lobby..."
     );
 
-    return;
+    setLobby(
+        "Connecting to " +
+        room
+    );
 
-}
+    try {
 
-
-/* ========================================================
-   PEER OPEN
-   ======================================================== */
-
-peer.on(
-
-    "open",
-
-    function(id) {
-
-        setStatus(
-            "Connecting to lobby..."
-        );
-
-
-        setLobby(
-
-            "Connected to PeerJS.\n" +
-            "Joining " +
-            room +
-            "..."
-
-        );
-
-
-        /*
-         * Connect the temporary JOINER
-         * relay to the permanent HOST relay.
-         */
-
-        var connection =
-            peer.connect(
-
-                room,
-
-                {
-
-                    reliable:
-                        true
-
-                }
-
-            );
-
-
-        setupConnection(
-            connection
-        );
+        peer =
+            new Peer();
 
     }
 
-);
-
-
-/* ========================================================
-   PEER ERROR
-   ======================================================== */
-
-peer.on(
-
-    "error",
-
-    function(error) {
-
-        /*
-         * unavailable-id should never be
-         * a problem for a joiner because
-         * the joiner has a random PeerJS ID.
-         */
+    catch (error) {
 
         notifyClient(
-
             "error",
-
             null,
-
             error.message ||
-            "PeerJS error.",
-
-            "",
-            ""
-
+            "Could not start PeerJS."
         );
+
+        return;
 
     }
 
-);
+    peer.on(
+        "open",
+        function(id) {
 
+            setStatus(
+                "Connecting to lobby..."
+            );
 
-/* ========================================================
-   DISCONNECTED
-   ======================================================== */
+            setLobby(
+                "Connected to PeerJS.\n" +
+                "Joining " +
+                room +
+                "..."
+            );
 
-peer.on(
+            var connection =
+                peer.connect(
+                    room,
+                    {
+                        reliable:
+                            true
+                    }
+                );
 
-    "disconnected",
+            setupConnection(
+                connection
+            );
 
-    function() {
+        }
+    );
 
-        setStatus(
-            "Reconnecting to PeerJS..."
-        );
+    peer.on(
+        "error",
+        function(error) {
 
+            notifyClient(
+                "error",
+                null,
+                error.message ||
+                "PeerJS error.",
+                "",
+                ""
+            );
 
-        /*
-         * The temporary relay can reconnect
-         * if PeerJS briefly disconnects.
-         */
+        }
+    );
 
-        try {
+    peer.on(
+        "disconnected",
+        function() {
 
-            if (
-                peer &&
-                !peer.destroyed
-            ) {
+            setStatus(
+                "Reconnecting to PeerJS..."
+            );
 
-                peer.reconnect();
+            try {
+
+                if (peer && !peer.destroyed) {
+                    peer.reconnect();
+                }
 
             }
 
+            catch (error) {}
+
         }
-
-        catch (error) {}
-
-    }
-
-);
-
+    );
 
 }
 
-/* ============================================================
-START
-============================================================ */
+var parentCheckTimer =
+    setInterval(
+        function() {
 
-if (
-typeof Peer ===
-"undefined"
-) {
+            /*
+             * The relay popup belongs to Main.html.
+             *
+             * If Main.html is closed OR reloaded,
+             * this relay should shut itself down.
+             */
 
+            if (!window.opener || window.opener.closed) {
 
-setStatus(
-    "PeerJS failed to load."
-);
+                clearInterval(
+                    parentCheckTimer
+                );
 
+                /*
+                 * Destroying the PeerJS object
+                 * closes the connection to the host.
+                 */
 
-setLobby(
-    "The PeerJS library could not be loaded."
-);
+                if (peer && !peer.destroyed) {
 
+                    try {
+                        peer.destroy();
+                    }
+
+                    catch (error) {}
+
+                }
+
+                try {
+                    window.close();
+                }
+
+                catch (error) {}
+
+            }
+
+        },
+        250
+    );
+
+if (typeof Peer === "undefined") {
+
+    setStatus(
+        "PeerJS failed to load."
+    );
+
+    setLobby(
+        "The PeerJS library could not be loaded."
+    );
 
 }
 
-else if (
-!action ||
-!room
-) {
+else if (!action || !room) {
 
+    setStatus(
+        "Missing parameters."
+    );
 
-setStatus(
-    "Missing parameters."
-);
-
-
-setLobby(
-    "Missing action or room."
-);
-
+    setLobby(
+        "Missing action or room."
+    );
 
 }
 
-else if (
-action ===
-"create"
-) {
+else if (action === "create") {
 
-
-createLobby();
-
+    createLobby();
 
 }
 
-else if (
-action ===
-"join"
-) {
+else if (action === "join") {
 
-
-joinLobby();
-
+    joinLobby();
 
 }
 
 else {
 
-
-setStatus(
-    "Unknown action."
-);
-
+    setStatus(
+        "Unknown action."
+    );
 
 }
+
