@@ -263,14 +263,12 @@ function setupConnection(connection) {
             return;
 
         }
-        if (data.type === "relay_event" && data.peerEvent === "user_list") {
-
+        if (data.type === "relay_event" && (data.peerEvent === "user_list" || data.peerEvent === "user_joined" || data.peerEvent === "user_left")) {
             notifyMain(data);
-
             return;
-
         }
-        if (data.type === "relay_event" && (data.peerEvent === "user_joined" || data.peerEvent === "user_left")) {
+
+        if (data.type === "relay_event" && (data.peerEvent === "user_list" || data.peerEvent === "user_joined" || data.peerEvent === "user_left")) {
             notifyMain(data);
             return;
         }
