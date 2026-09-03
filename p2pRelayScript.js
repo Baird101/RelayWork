@@ -1,1052 +1,572 @@
-var params =
-    new URLSearchParams(
-        window.location.search
-    );
+var params = new URLSearchParams(window.location.search);
+var action = params.get("action");
+var room = params.get("room");
+var peer = null;
 
-var action =
-    params.get("action");
-
-var room =
-    params.get("room");
-
-var peer =
-    null;
-
-/*
- * Every PeerJS connection gets an entry here.
- */
-var connections =
-    [];
-
-/*
- * The host's name.
- */
-var hostName =
-    "";
-
-/*
- * Prevent duplicate connections.
- */
-var connectionIds =
-    [];
+var connections = [];
+var hostName = "";
+var connectionIds = [];
 
 function setStatus(text) {
-
-    var element =
-        document.getElementById("status");
+    var element = document.getElementById("status");
 
     if (element) {
-        element.textContent =
-            text;
+        element.textContent = text;
     }
-
 }
 
 function setLobby(text) {
-
-    var element =
-        document.getElementById("lobby");
+    var element = document.getElementById("lobby");
 
     if (element) {
-        element.textContent =
-            text;
+        element.textContent = text;
     }
-
 }
 
-function notifyClient(
-    peerEvent,
-    role,
-    detail,
-    name,
-    peerId
-) {
-
+function notifyClient(peerEvent, role, detail, name, peerId) {
     if (!window.opener || window.opener.closed) {
         return;
     }
 
     window.opener.postMessage({
-
-        type:
-            "relay_event",
-
-        room:
-            room,
-
-        peerEvent:
-            peerEvent,
-
-        role:
-            role || null,
-
-        detail:
-            detail || "",
-
-        name:
-            name || "",
-
-        peerId:
-            peerId || ""
-
+        type: "relay_event",
+        room: room,
+        peerEvent: peerEvent,
+        role: role || null,
+        detail: detail || "",
+        name: name || "",
+        peerId: peerId || ""
     }, "*");
-
 }
 
 function notifyMain(data) {
-
     if (!window.opener || window.opener.closed) {
         return;
     }
 
-    window.opener.postMessage(
-        data,
-        "*"
-    );
-
+    window.opener.postMessage(data, "*");
 }
 
 function addConnection(connection) {
-
     if (connectionIds.indexOf(connection.peer) !== -1) {
         return;
     }
 
-    connectionIds.push(
-        connection.peer
-    );
+    connectionIds.push(connection.peer);
 
     connections.push({
-
-        connection:
-            connection,
-
-        name:
-            "",
-
-        peerId:
-            connection.peer
-
+        connection: connection,
+        name: "",
+        peerId: connection.peer
     });
-
 }
 
 function findConnection(connection) {
-
-    for (
-        var i = 0;
-        i < connections.length;
-        i++
-    ) {
-
+    for (var i = 0; i < connections.length; i++) {
         if (connections[i].connection === connection) {
             return connections[i];
         }
-
     }
 
     return null;
-
 }
 
 function removeConnection(connection) {
-
-    for (
-        var i = 0;
-        i < connections.length;
-        i++
-    ) {
-
+    for (var i = 0; i < connections.length; i++) {
         if (connections[i].connection === connection) {
+            var user = connections[i];
 
-            var user =
-                connections[i];
+            connections.splice(i, 1);
 
-            connections.splice(
-                i,
-                1
-            );
-
-            var idIndex =
-                connectionIds.indexOf(
-                    connection.peer
-                );
+            var idIndex = connectionIds.indexOf(connection.peer);
 
             if (idIndex !== -1) {
-
-                connectionIds.splice(
-                    idIndex,
-                    1
-                );
-
+                connectionIds.splice(idIndex, 1);
             }
 
             return user;
-
         }
-
     }
 
     return null;
-
 }
 
 function updateLobbyDisplay() {
-
-    setStatus(
-        "Connected users: " +
-        connections.length
-    );
-
-    setLobby(
-        "Lobby: " +
-        room +
-        "\nUsers connected: " +
-        connections.length
-    );
-
+    setStatus("Connected users: " + connections.length);
+    setLobby("Lobby: " + room + "\nUsers connected: " + connections.length);
 }
 
 function broadcast(data, exceptConnection) {
-
-    for (
-        var i = 0;
-        i < connections.length;
-        i++
-    ) {
-
-        var connection =
-            connections[i].connection;
+    for (var i = 0; i < connections.length; i++) {
+        var connection = connections[i].connection;
 
         if (connection === exceptConnection) {
             continue;
         }
 
         if (connection.open) {
-
             try {
-                connection.send(
-                    data
-                );
-            }
-
-            catch (error) {}
-
+                connection.send(data);
+            } catch (error) {}
         }
-
     }
-
 }
 
 function setupConnection(connection) {
+    addConnection(connection);
 
-    addConnection(
-        connection
-    );
+    var user = findConnection(connection);
 
-    var user =
-        findConnection(
-            connection
-        );
+    connection.on("open", function() {
+        updateLobbyDisplay();
 
-    connection.on(
-        "open",
-        function() {
-
-            updateLobbyDisplay();
-
-            /*
-             * A JOINER tells its own Main.html
-             * that the host connection is ready.
-             */
-
-            if (action === "join") {
-
-                notifyClient(
-                    "connected",
-                    "joiner",
-                    "",
-                    "",
-                    peer.id
-                );
-
-            }
-
+        if (action === "join") {
+            notifyClient("connected", "joiner", "", "", peer.id);
         }
-    );
+    });
 
-    connection.on(
-        "data",
-        function(data) {
-
-            if (!data) {
-                return;
-            }
-
-            if (data.type === "set_name") {
-
-                if (user) {
-
-                    user.name =
-                        data.name ||
-                        "";
-
-                }
-
-                /*
-                 * Only the HOST relay handles
-                 * joiner names.
-                 */
-
-                if (action === "create") {
-
-                    notifyClient(
-                        "user_joined",
-                        "joiner",
-                        "",
-                        data.name || "Unknown",
-                        connection.peer
-                    );
-
-                    /*
-                     * Tell EVERY OTHER JOINER.
-                     */
-
-                    broadcast({
-                        type: "relay_event",
-                        room: room,
-                        peerEvent: "user_joined",
-                        role: "joiner",
-                        detail: "",
-                        name: data.name || "Unknown",
-                        peerId: connection.peer
-                    }, connection);
-
-                }
-
-                return;
-
-            }
-
-            if (data.type === "signal_send") {
-
-                if (action === "create") {
-
-                    broadcast({
-
-                        type:
-                            "signal_data",
-
-                        room:
-                            room,
-
-                        payload:
-                            data.payload
-
-                    }, connection);
-
-                }
-
-                else if (action === "join") {
-
-                    broadcast({
-
-                        type:
-                            "signal_data",
-
-                        room:
-                            room,
-
-                        payload:
-                            data.payload
-
-                    }, connection);
-
-                }
-
-                return;
-
-            }
-
-            if (data.type === "chat_send") {
-
-                if (user) {
-
-                    user.name =
-                        data.name ||
-                        user.name ||
-                        "";
-
-                }
-
-                var message = {
-
-                    type:
-                        "chat",
-
-                    room:
-                        room,
-
-                    name:
-                        data.name ||
-                        (
-                            user
-                                ? user.name
-                                : ""
-                        ) ||
-                        "Unknown",
-
-                    text:
-                        data.text ||
-                        "",
-
-                    senderId:
-                        data.senderId ||
-                        ""
-
-                };
-
-                broadcast(
-                    message,
-                    connection
-                );
-
-                notifyMain(
-                    message
-                );
-
-                return;
-
-            }
-
-            if (
-                data.type === "relay_event" &&
-                (
-                    data.peerEvent === "user_joined" ||
-                    data.peerEvent === "user_left"
-                )
-            ) {
-
-                notifyMain(
-                    data
-                );
-
-                return;
-
-            }
-
-            broadcast(
-                data,
-                connection
-            );
-
-            notifyMain(
-                data
-            );
-
-        }
-    );
-
-    connection.on(
-        "close",
-        function() {
-
-            var oldUser =
-                removeConnection(
-                    connection
-                );
-
-            updateLobbyDisplay();
-
-            /*
-             * HOST RELAY:
-             *
-             * A joiner disconnected.
-             *
-             * Tell the host.
-             */
-
-            if (action === "create") {
-
-                var leftEvent = {
-
-                    type:
-                        "relay_event",
-
-                    room:
-                        room,
-
-                    peerEvent:
-                        "user_left",
-
-                    role:
-                        "joiner",
-
-                    detail:
-                        "",
-
-                    name:
-                        oldUser
-                            ? oldUser.name
-                            : "Unknown",
-
-                    peerId:
-                        connection.peer
-
-                };
-
-                /*
-                 * Tell the HOST Main.html.
-                 */
-
-                notifyMain(
-                    leftEvent
-                );
-
-                /*
-                 * Tell EVERY OTHER JOINER.
-                 */
-
-                broadcast(
-                    leftEvent
-                );
-
-            }
-
-            /*
-             * JOINER RELAY:
-             *
-             * The host connection died.
-             */
-
-            if (action === "join") {
-
-                notifyClient(
-                    "user_left",
-                    null,
-                    "",
-                    "",
-                    connection.peer
-                );
-
-            }
-
-        }
-    );
-
-    connection.on(
-        "error",
-        function(error) {
-
-            notifyClient(
-                "error",
-                null,
-                error.message ||
-                "Connection error.",
-                "",
-                connection.peer
-            );
-
-        }
-    );
-
-}
-
-window.addEventListener(
-    "message",
-    function(event) {
-
-        /*
-         * Only accept messages from our
-         * parent Main.html.
-         */
-
-        if (!window.opener || event.source !== window.opener) {
-            return;
-        }
-
-        var data =
-            event.data || {};
-
-        if (data.room && data.room !== room) {
+    connection.on("data", function(data) {
+        if (!data) {
             return;
         }
 
         if (data.type === "set_name") {
-
-            /*
-             * HOST
-             */
+            if (user) {
+                user.name = data.name || "";
+            }
 
             if (action === "create") {
+                var joinName = data.name || "Unknown";
 
-                hostName =
-                    data.name ||
-                    "";
+                notifyClient(
+                    "user_joined",
+                    "joiner",
+                    "",
+                    joinName,
+                    connection.peer
+                );
 
-                return;
-
+                broadcast({
+                    type: "relay_event",
+                    room: room,
+                    peerEvent: "user_joined",
+                    role: "joiner",
+                    detail: "",
+                    name: joinName,
+                    peerId: connection.peer
+                }, connection);
             }
 
-            /*
-             * JOINER
-             */
+            return;
+        }
 
-            if (action === "join") {
+        if (data.type === "user_disconnect") {
+            if (action === "create") {
+                var disconnectedUser = removeConnection(connection);
 
-                if (connections.length > 0) {
+                var leftEvent = {
+                    type: "relay_event",
+                    room: room,
+                    peerEvent: "user_left",
+                    role: "joiner",
+                    detail: "",
+                    name: disconnectedUser && disconnectedUser.name
+                        ? disconnectedUser.name
+                        : "Unknown",
+                    peerId: connection.peer
+                };
 
-                    var hostConnection =
-                        connections[0].connection;
-
-                    if (hostConnection.open) {
-
-                        hostConnection.send({
-
-                            type:
-                                "set_name",
-
-                            name:
-                                data.name ||
-                                ""
-
-                        });
-
-                    }
-
-                }
-
-                return;
-
+                updateLobbyDisplay();
+                notifyMain(leftEvent);
+                broadcast(leftEvent);
             }
 
+            return;
         }
 
         if (data.type === "signal_send") {
-
             if (action === "create") {
-
                 broadcast({
-
-                    type:
-                        "signal_data",
-
-                    room:
-                        room,
-
-                    payload:
-                        data.payload
-
-                });
-
-                return;
-
+                    type: "signal_data",
+                    room: room,
+                    payload: data.payload
+                }, connection);
             }
 
-            if (action === "join") {
-
-                if (connections.length > 0) {
-
-                    var hostConnection =
-                        connections[0].connection;
-
-                    if (hostConnection.open) {
-
-                        hostConnection.send({
-
-                            type:
-                                "signal_send",
-
-                            room:
-                                room,
-
-                            payload:
-                                data.payload
-
-                        });
-
-                    }
-
-                }
-
-                return;
-
+            else if (action === "join") {
+                broadcast({
+                    type: "signal_data",
+                    room: room,
+                    payload: data.payload
+                }, connection);
             }
 
+            return;
         }
 
         if (data.type === "chat_send") {
+            if (user) {
+                user.name = data.name || user.name || "";
+            }
 
             var message = {
-
-                type:
-                    "chat",
-
-                room:
-                    room,
-
-                name:
-                    data.name ||
-                    hostName ||
-                    "Unknown",
-
-                text:
-                    data.text ||
-                    "",
-
-                senderId:
-                    data.senderId ||
-                    ""
-
+                type: "chat",
+                room: room,
+                name: data.name || (user ? user.name : "") || "Unknown",
+                text: data.text || "",
+                senderId: data.senderId || ""
             };
 
-            broadcast(
-                message
-            );
-
-            notifyMain(
-                message
-            );
+            broadcast(message, connection);
+            notifyMain(message);
 
             return;
-
         }
 
-        broadcast(
-            data
-        );
+        if (
+            data.type === "relay_event" &&
+            (
+                data.peerEvent === "user_joined" ||
+                data.peerEvent === "user_left"
+            )
+        ) {
+            notifyMain(data);
+            return;
+        }
 
-        notifyMain(
-            data
-        );
+        broadcast(data, connection);
+        notifyMain(data);
+    });
 
+    connection.on("close", function() {
+        var oldUser = removeConnection(connection);
+
+        updateLobbyDisplay();
+
+        if (action === "create") {
+            var leftEvent = {
+                type: "relay_event",
+                room: room,
+                peerEvent: "user_left",
+                role: "joiner",
+                detail: "",
+                name: oldUser && oldUser.name
+                    ? oldUser.name
+                    : "Unknown",
+                peerId: connection.peer
+            };
+
+            notifyMain(leftEvent);
+            broadcast(leftEvent);
+        }
+
+        else if (action === "join") {
+            notifyClient(
+                "user_left",
+                null,
+                "",
+                "",
+                connection.peer
+            );
+        }
+    });
+
+    connection.on("error", function(error) {
+        notifyClient(
+            "error",
+            null,
+            error.message || "Connection error.",
+            "",
+            connection.peer
+        );
+    });
+}
+
+window.addEventListener("message", function(event) {
+    if (!window.opener || event.source !== window.opener) {
+        return;
     }
-);
+
+    var data = event.data || {};
+
+    if (data.room && data.room !== room) {
+        return;
+    }
+
+    if (data.type === "set_name") {
+        if (action === "create") {
+            hostName = data.name || "";
+            return;
+        }
+
+        else if (action === "join") {
+            if (connections.length > 0) {
+                var hostConnection = connections[0].connection;
+
+                if (hostConnection.open) {
+                    hostConnection.send({
+                        type: "set_name",
+                        name: data.name || ""
+                    });
+                }
+            }
+
+            return;
+        }
+    }
+
+    if (data.type === "signal_send") {
+        if (action === "create") {
+            broadcast({
+                type: "signal_data",
+                room: room,
+                payload: data.payload
+            });
+
+            return;
+        }
+
+        else if (action === "join") {
+            if (connections.length > 0) {
+                var hostConnection = connections[0].connection;
+
+                if (hostConnection.open) {
+                    hostConnection.send({
+                        type: "signal_send",
+                        room: room,
+                        payload: data.payload
+                    });
+                }
+            }
+
+            return;
+        }
+    }
+
+    if (data.type === "chat_send") {
+        var message = {
+            type: "chat",
+            room: room,
+            name: data.name || hostName || "Unknown",
+            text: data.text || "",
+            senderId: data.senderId || ""
+        };
+
+        broadcast(message);
+        notifyMain(message);
+
+        return;
+    }
+
+    if (data.type === "user_disconnect") {
+        if (action === "join") {
+            if (connections.length > 0) {
+                var hostConnection = connections[0].connection;
+
+                if (hostConnection.open) {
+                    hostConnection.send({
+                        type: "user_disconnect"
+                    });
+                }
+            }
+        }
+
+        return;
+    }
+
+    broadcast(data);
+    notifyMain(data);
+});
 
 function createLobby() {
-
-    setStatus(
-        "Connecting to PeerJS..."
-    );
-
-    setLobby(
-        "Creating lobby: " +
-        room
-    );
+    setStatus("Connecting to PeerJS...");
+    setLobby("Creating lobby: " + room);
 
     try {
+        peer = new Peer(room);
+    } catch (error) {
+        notifyClient(
+            "error",
+            null,
+            error.message || "Could not start PeerJS."
+        );
 
-        peer =
-            new Peer(
+        return;
+    }
+
+    peer.on("open", function(id) {
+        setStatus("Lobby created!");
+
+        setLobby(
+            "Lobby: " +
+            id +
+            "\nWaiting for users..."
+        );
+
+        notifyClient(
+            "room_created",
+            "host",
+            "",
+            "",
+            id
+        );
+    });
+
+    peer.on("connection", function(connection) {
+        setupConnection(connection);
+    });
+
+    peer.on("error", function(error) {
+        if (error.type === "unavailable-id") {
+            setStatus("Lobby already exists.");
+
+            setLobby(
+                "Another relay already owns " +
                 room
             );
 
-    }
-
-    catch (error) {
-
-        notifyClient(
-            "error",
-            null,
-            error.message ||
-            "Could not start PeerJS."
-        );
-
-        return;
-
-    }
-
-    peer.on(
-        "open",
-        function(id) {
-
-            setStatus(
-                "Lobby created!"
-            );
-
-            setLobby(
-                "Lobby: " +
-                id +
-                "\nWaiting for users..."
-            );
-
             notifyClient(
-                "room_created",
-                "host",
-                "",
-                "",
-                id
-            );
-
-        }
-    );
-
-    peer.on(
-        "connection",
-        function(connection) {
-
-            setupConnection(
-                connection
-            );
-
-        }
-    );
-
-    peer.on(
-        "error",
-        function(error) {
-
-            if (error.type === "unavailable-id") {
-
-                setStatus(
-                    "Lobby already exists."
-                );
-
-                setLobby(
-                    "Another relay already owns " +
-                    room
-                );
-
-                notifyClient(
-                    "lobby_exists",
-                    "joiner",
-                    error.message ||
-                    "Lobby already exists.",
-                    "",
-                    ""
-                );
-
-                return;
-
-            }
-
-            notifyClient(
-                "error",
-                null,
-                error.message ||
-                "PeerJS error.",
+                "lobby_exists",
+                "joiner",
+                error.message || "Lobby already exists.",
                 "",
                 ""
             );
 
+            return;
         }
-    );
 
-    peer.on(
-        "disconnected",
-        function() {
+        notifyClient(
+            "error",
+            null,
+            error.message || "PeerJS error.",
+            "",
+            ""
+        );
+    });
 
-            setStatus(
-                "Reconnecting to PeerJS..."
-            );
+    peer.on("disconnected", function() {
+        setStatus("Reconnecting to PeerJS...");
 
-            setLobby(
-                "Lobby: " +
-                room +
-                "\nReconnecting..."
-            );
+        setLobby(
+            "Lobby: " +
+            room +
+            "\nReconnecting..."
+        );
 
-            try {
-
-                if (peer && !peer.destroyed) {
-                    peer.reconnect();
-                }
-
+        try {
+            if (peer && !peer.destroyed) {
+                peer.reconnect();
             }
-
-            catch (error) {}
-
-        }
-    );
-
+        } catch (error) {}
+    });
 }
 
 function joinLobby() {
-
-    setStatus(
-        "Joining lobby..."
-    );
-
-    setLobby(
-        "Connecting to " +
-        room
-    );
+    setStatus("Joining lobby...");
+    setLobby("Connecting to " + room);
 
     try {
-
-        peer =
-            new Peer();
-
-    }
-
-    catch (error) {
-
+        peer = new Peer();
+    } catch (error) {
         notifyClient(
             "error",
             null,
-            error.message ||
-            "Could not start PeerJS."
+            error.message || "Could not start PeerJS."
         );
 
         return;
-
     }
 
-    peer.on(
-        "open",
-        function(id) {
+    peer.on("open", function(id) {
+        setStatus("Connecting to lobby...");
 
-            setStatus(
-                "Connecting to lobby..."
-            );
+        setLobby(
+            "Connected to PeerJS.\n" +
+            "Joining " +
+            room +
+            "..."
+        );
 
-            setLobby(
-                "Connected to PeerJS.\n" +
-                "Joining " +
-                room +
-                "..."
-            );
-
-            var connection =
-                peer.connect(
-                    room,
-                    {
-                        reliable:
-                            true
-                    }
-                );
-
-            setupConnection(
-                connection
-            );
-
-        }
-    );
-
-    peer.on(
-        "error",
-        function(error) {
-
-            notifyClient(
-                "error",
-                null,
-                error.message ||
-                "PeerJS error.",
-                "",
-                ""
-            );
-
-        }
-    );
-
-    peer.on(
-        "disconnected",
-        function() {
-
-            setStatus(
-                "Reconnecting to PeerJS..."
-            );
-
-            try {
-
-                if (peer && !peer.destroyed) {
-                    peer.reconnect();
-                }
-
+        var connection = peer.connect(
+            room,
+            {
+                reliable: true
             }
+        );
 
-            catch (error) {}
+        setupConnection(connection);
+    });
 
-        }
-    );
+    peer.on("error", function(error) {
+        notifyClient(
+            "error",
+            null,
+            error.message || "PeerJS error.",
+            "",
+            ""
+        );
+    });
 
+    peer.on("disconnected", function() {
+        setStatus("Reconnecting to PeerJS...");
+
+        try {
+            if (peer && !peer.destroyed) {
+                peer.reconnect();
+            }
+        } catch (error) {}
+    });
 }
 
-var parentCheckTimer =
-    setInterval(
-        function() {
+var parentCheckTimer = setInterval(function() {
+    if (!window.opener || window.opener.closed) {
+        clearInterval(parentCheckTimer);
 
-            /*
-             * The relay popup belongs to Main.html.
-             *
-             * If Main.html is closed OR reloaded,
-             * this relay should shut itself down.
-             */
+        if (action === "join" && connections.length > 0) {
+            var hostConnection = connections[0].connection;
 
-            if (!window.opener || window.opener.closed) {
-
-                clearInterval(
-                    parentCheckTimer
-                );
-
-                /*
-                 * Destroying the PeerJS object
-                 * closes the connection to the host.
-                 */
-
-                if (peer && !peer.destroyed) {
-
-                    try {
-                        peer.destroy();
-                    }
-
-                    catch (error) {}
-
-                }
-
+            if (hostConnection.open) {
                 try {
-                    window.close();
-                }
-
-                catch (error) {}
-
+                    hostConnection.send({
+                        type: "user_disconnect"
+                    });
+                } catch (error) {}
             }
+        }
 
-        },
-        250
-    );
+        if (peer && !peer.destroyed) {
+            try {
+                peer.destroy();
+            } catch (error) {}
+        }
+
+        try {
+            window.close();
+        } catch (error) {}
+    }
+}, 250);
 
 if (typeof Peer === "undefined") {
-
-    setStatus(
-        "PeerJS failed to load."
-    );
-
-    setLobby(
-        "The PeerJS library could not be loaded."
-    );
-
+    setStatus("PeerJS failed to load.");
+    setLobby("The PeerJS library could not be loaded.");
 }
 
 else if (!action || !room) {
-
-    setStatus(
-        "Missing parameters."
-    );
-
-    setLobby(
-        "Missing action or room."
-    );
-
+    setStatus("Missing parameters.");
+    setLobby("Missing action or room.");
 }
 
 else if (action === "create") {
-
     createLobby();
-
 }
 
 else if (action === "join") {
-
     joinLobby();
-
 }
 
 else {
-
-    setStatus(
-        "Unknown action."
-    );
-
+    setStatus("Unknown action.");
+    setLobby("Unknown action.");
 }
 
