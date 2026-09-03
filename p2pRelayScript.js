@@ -336,7 +336,9 @@ function setupConnection(connection) {
                 "user_left",
                 null,
                 "",
-                "",
+                oldUser && oldUser.name
+                    ? oldUser.name
+                    : "Unknown",
                 connection.peer
             );
 
@@ -367,23 +369,34 @@ window.addEventListener("message", function(event) {
     }
 
     if (data.type === "set_name") {
+
         if (action === "create") {
-            hostName = data.name || "";
-            
+
+            if (user) {
+                user.name = data.name || "";
+            }
+
             sendUserList();
+
             return;
         }
 
         else if (action === "join") {
+
             if (connections.length > 0) {
-                var hostConnection = connections[0].connection;
+
+                var hostConnection =
+                    connections[0].connection;
 
                 if (hostConnection.open) {
+
                     hostConnection.send({
                         type: "set_name",
                         name: data.name || ""
                     });
+
                 }
+
             }
 
             return;
@@ -434,16 +447,11 @@ window.addEventListener("message", function(event) {
     }
 
     if (data.type === "user_disconnect") {
-        if (action === "join") {
-            if (connections.length > 0) {
-                var hostConnection = connections[0].connection;
 
-                if (hostConnection.open) {
-                    hostConnection.send({
-                        type: "user_disconnect"
-                    });
-                }
-            }
+        if (action === "create") {
+            removeConnection(connection);
+            updateLobbyDisplay();
+            sendUserList();
         }
 
         return;
