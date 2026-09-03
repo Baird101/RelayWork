@@ -7,6 +7,44 @@ var connections = [];
 var hostName = "";
 var connectionIds = [];
 
+function sendUserList() {
+
+    var users = [];
+
+    if (hostName !== "") {
+        users.push({
+            name: hostName,
+            peerId: peer.id
+        });
+    }
+
+    for (var i = 0; i < connections.length; i++) {
+
+        users.push({
+            name: connections[i].name || "Unknown",
+            peerId: connections[i].peerId
+        });
+
+    }
+
+    var message = {
+        type: "relay_event",
+        room: room,
+        peerEvent: "user_list",
+        users: users
+    };
+
+    /*
+     * Send to this relay's Main.html.
+     */
+    notifyMain(message);
+
+    /*
+     * Send the complete list to connected relays.
+     */
+    broadcast(message);
+}
+
 function setStatus(text) {
     var element = document.getElementById("status");
 
@@ -131,33 +169,27 @@ function setupConnection(connection) {
         }
 
         if (data.type === "set_name") {
-            if (user) {
-                user.name = data.name || "";
-            }
 
             if (action === "create") {
-                var joinName = data.name || "Unknown";
-
-                notifyClient(
-                    "user_joined",
-                    "joiner",
-                    "",
-                    joinName,
-                    connection.peer
-                );
-
-                broadcast({
-                    type: "relay_event",
-                    room: room,
-                    peerEvent: "user_joined",
-                    role: "joiner",
-                    detail: "",
-                    name: joinName,
-                    peerId: connection.peer
-                }, connection);
+                hostName = data.name || "";
+                sendUserList();
+                return;
             }
 
-            return;
+            else if (action === "join") {
+                if (connections.length > 0) {
+                    var hostConnection = connections[0].connection;
+
+                    if (hostConnection.open) {
+                        hostConnection.send({
+                            type: "set_name",
+                            name: data.name || ""
+                        });
+                    }
+                }
+
+                return;
+            }
         }
 
         if (data.type === "user_disconnect") {
@@ -180,7 +212,8 @@ function setupConnection(connection) {
                 notifyMain(leftEvent);
                 broadcast(leftEvent);
             }
-
+            
+            sendUserList();
             return;
         }
 
