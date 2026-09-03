@@ -268,11 +268,6 @@ function setupConnection(connection) {
             return;
         }
 
-        if (data.type === "relay_event" && (data.peerEvent === "user_list" || data.peerEvent === "user_joined" || data.peerEvent === "user_left")) {
-            notifyMain(data);
-            return;
-        }
-
         broadcast(data, connection);
         notifyMain(data);
     });
@@ -335,6 +330,8 @@ window.addEventListener("message", function(event) {
     if (data.type === "set_name") {
         if (action === "create") {
             hostName = data.name || "";
+            
+            sendUserList();
             return;
         }
 
