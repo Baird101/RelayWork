@@ -236,7 +236,8 @@ function setupConnection(connection) {
                     role: "joiner",
                     detail: "",
                     name: user.name,
-                    peerId: user.peerId
+                    peerId: user.peerId,
+                    timestamp: Date.now()
                 };
 
                 notifyMain(joinedEvent);
@@ -388,11 +389,9 @@ function setupConnection(connection) {
                 peerEvent: "user_left",
                 role: "joiner",
                 detail: "",
-                name:
-                    oldUser && oldUser.name
-                        ? oldUser.name
-                        : "Unknown",
-                peerId: connection.peer
+                name: oldUser && oldUser.name ? oldUser.name : "Unknown",
+                peerId: connection.peer,
+                timestamp: Date.now()
             };
 
             notifyMain(leftEvent);

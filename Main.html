@@ -1,5 +1,11 @@
 <!DOCTYPE html>
-
+<!-- 
+New stuff
+ * Timestamps
+ * Online user list
+ * Cool UI
+ * Fixed bugs on log in and log out messages
+-->
 <html>
 
 <head>
@@ -64,110 +70,93 @@
 		}
 
 		#nameScreen {
-
 			background: linear-gradient(
 				var(--angle),
 				rgb(87, 0, 0),
 				rgb(0, 0, 0)
 			);
 
-			width:
-				100%;
+			width: 100%;
 
-			height:
-				100%;
-
-			display:
-				flex;
-
-			flex-direction:
-				column;
-
-			justify-content:
-				center;
-
-			align-items:
-				center;
-
-			box-sizing:
-				border-box;
-
-			padding:
-				30px;
+			height: 100%;
+			
+			display: flex;
+			
+			flex-direction: column;
+			
+			justify-content: center;
+			
+			align-items: center;
+			
+			box-sizing: border-box;
+			
+			padding: 30px;
 
 		}
 
 		#nameScreen h1 {
 			color: rgba(255, 255, 255, 0.5);
-			margin:
-				0 0 10px 0;
+			
+			margin: 0 0 10px 0;
 
 		}
 
 		#nameScreen p {
-
-			color:
-				white;
-
-			margin:
-				0 0 20px 0;
-
+			color: white;
+			
+			margin: 0 0 20px 0;
 		}
 
 		#nameInput {
 
-			width:
-				300px;
+			width: 300px;
 
-			box-sizing:
-				border-box;
+			box-sizing: border-box;
 
-			padding:
-				12px;
+			padding: 12px;
 
-			font-size:
-				18px;
+			font-size: 18px;
 
-			border:
-				2px solid rgb(200, 220, 220);
+			border: 5px ridge rgb(255, 255, 255);
+            
+			background: rgba(255, 255, 255, 0.4);
+			
+			color: white;
+		}
+		
+		#nameInput:hover {
 
-			outline:
-				none;
+			background: rgba(255, 255, 255, 0.5);
 
 		}
+		#nameInput::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
 
 		#joinButton {
 
-			width:
-				300px;
+			width: 300px;
 
-			margin-top:
-				10px;
+			margin-top: 10px;
 
-			padding:
-				12px;
+			padding: 12px;
 
-			border:
-				none;
+			background: rgba(255, 255, 255, 0.4);
 
-			background:
-				#333;
+			color: white;
 
-			color:
-				white;
 
-			font-size:
-				16px;
+			font-size: 16px;
 
-			cursor:
-				pointer;
+			cursor: pointer;
+				
+			border: 5px ridge rgba(255, 255, 255, 0.5);
 
 		}
 
 		#joinButton:hover {
 
-			background:
-				#555;
+			background: rgba(255, 255, 255, 0.5);
 
 		}
 
@@ -224,8 +213,7 @@
 
 		.name {
 
-			font-weight:
-				bold;
+			font-weight: bold;
 
 		}
 
@@ -250,11 +238,9 @@
 
 		#inputArea {
 
-			display:
-				flex;
+			display: flex;
 
-			height:
-				45px;
+			height: 45px;
 		}
 
 		#messageInput {
@@ -346,40 +332,31 @@
         
         #userListTitle {
         
-            font-weight:
-                bold;
+            font-weight: bold;
         
-            margin-bottom:
-                6px;
+            margin-bottom: 6px;
         
-            border-bottom:
-                1px solid rgba(255, 255, 255, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         
-            padding-bottom:
-                4px;
+            padding-bottom: 4px;
         
         }
         
         #users {
         
-            overflow-y:
-                auto;
+            overflow-y: auto;
         
         }
         
         .user {
         
-            padding:
-                2px 0;
+            padding: 2px 0;
         
-            white-space:
-                nowrap;
+            white-space: nowrap;
         
-            overflow:
-                hidden;
+            overflow: hidden;
         
-            text-overflow:
-                ellipsis;
+            text-overflow: ellipsis;
         
         }
 
@@ -632,40 +609,48 @@
 		}
 
 
-		function systemMessage(
-			text
-		) {
+		function systemMessage(text, timestamp) {
+            var div = document.createElement("div");
+        
+            div.className = "message";
+        
+        
+            div.style.color = "#777";
+        
+        
+            if (timestamp) {
+        
+                var timeSpan = document.createElement("span");
+        
+        
+                timeSpan.className = "timestamp";
+        
+        
+                timeSpan.textContent = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(timestamp)) + " ";
+                
+                div.appendChild(timeSpan);
+        
+            }
+        
+        
+            var textSpan = document.createElement("span");
+        
+        
+            textSpan.textContent = text;
+        
+        
+            div.appendChild(textSpan);
+        
+        
+            messages.appendChild(div);
+        
+        
+            messages.scrollTop = messages.scrollHeight;
+        
+        }
 
-			var div =
-				document.createElement(
-					"div"
-				);
 
-
-			div.className =
-				"message";
-
-
-			div.style.color =
-				"#777";
-
-
-			div.textContent =
-				text;
-
-
-			messages.appendChild(
-				div
-			);
-
-
-			messages.scrollTop =
-				messages.scrollHeight;
-
-		}
-
-
-		var localDev =
+		var localDev = 
 			location.hostname ===
 				"localhost" ||
 			location.hostname ===
@@ -678,24 +663,15 @@
 				: "https://baird101.github.io/RelayWork/p2pRelay.html";
 
 
-		var currentRoom =
-			"main";
+		var currentRoom = "main";
 
-
-		var signalWindow =
-			null;
+		var signalWindow = null;
         
-		var relayReady =
-			false;
+		var relayReady = false;
 
+		var relayOpening = false;
 
-		var relayOpening =
-			false;
-
-
-		function openRelay(
-			action
-		) {
+		function openRelay(action) {
 
 			if (
 				relayOpening
@@ -956,15 +932,14 @@
         		
 				if (msg.type === "relay_event" && msg.peerEvent === "user_joined") {
 					if (msg.name) {
-						systemMessage(msg.name +" joined the lobby.");
+						systemMessage(msg.name + " joined the lobby.", msg.timestamp);
 					}
 					return;
-
 				}
 
 				if (msg.type === "relay_event" && msg.peerEvent === "user_left") {
 					if (msg.name) {
-						systemMessage(msg.name + " left the lobby.");
+						systemMessage(msg.name + " left the lobby.", msg.timestamp);
 					}
 
 					return;
@@ -1027,15 +1002,9 @@
 			}
 
 
-			if (
-				!signalWindow ||
-				signalWindow.closed ||
-				!relayReady
-			) {
+			if (!signalWindow || signalWindow.closed || !relayReady) {
 
-				systemMessage(
-					"Not connected yet."
-				);
+				systemMessage("Not connected yet.");
 
 
 				return;
@@ -1057,81 +1026,48 @@
 			 * Display our own message immediately.
 			 */
 
-			addMessage(
-				myName,
-				text,
-				message.timestamp
-			);
+			addMessage(myName, text, message.timestamp);
 
 
 			/*
 			 * Send to relay.
 			 */
 
-			signalWindow.postMessage(
-				message,
-				"*"
-			);
+			signalWindow.postMessage(message, "*");
 
 
-			messageInput.value =
-				"";
-
+			messageInput.value = "";
 
 			messageInput.focus();
 
 		}
 
+		sendButton.onclick = sendChat;
 
-		sendButton.onclick =
-			sendChat;
-
-
-		messageInput.onkeydown =
-			function(event) {
-
-				if (
-					event.key ===
-					"Enter"
-				) {
-
-					sendChat();
-
-				}
-
-			};
+		messageInput.onkeydown = function(event) {
+			if (event.key === "Enter") {
+				sendChat();
+			}
+		};
 
 
 		function joinLobby() {
 
-			currentRoom =
-				"main";
+			currentRoom = "main";
 
+			relayReady = false;
 
-			relayReady =
-				false;
+			statusElement.textContent = "Creating lobby...";
 
-
-			statusElement.textContent =
-				"Creating lobby...";
-
-
-			openRelay(
-				"create"
-			);
+			openRelay("create");
 
 		}
 
 
 		function enterLobby() {
+			var name = nameInput.value.trim();
 
-			var name =
-				nameInput.value.trim();
-
-
-			if (
-				name === ""
-			) {
+			if (name === "") {
 
 				nameInput.focus();
 
@@ -1141,29 +1077,23 @@
 			}
 
 
-			if (
-				hasJoined
-			) {
+			if (hasJoined) {
 
 				return;
 
 			}
 
 
-			hasJoined =
-				true;
+			hasJoined = true;
 
 
-			myName =
-				name;
+			myName = name;
 
 
-			nameScreen.style.display =
-				"none";
+			nameScreen.style.display = "none";
 
 
-			chatScreen.style.display =
-				"flex";
+			chatScreen.style.display = "flex";
 
 
 			joinLobby();
@@ -1171,23 +1101,14 @@
 		}
 
 
-		joinButton.onclick =
-			enterLobby;
+		joinButton.onclick = enterLobby;
 
 
-		nameInput.onkeydown =
-			function(event) {
-
-				if (
-					event.key ===
-					"Enter"
-				) {
-
-					enterLobby();
-
-				}
-
-			};
+		nameInput.onkeydown = function(event) {
+			if (event.key === "Enter") {
+				enterLobby();
+			}
+		};
 
 	</script>
 
