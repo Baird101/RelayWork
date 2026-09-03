@@ -23,7 +23,7 @@ function setLobby(text) {
     }
 }
 
-function notifyClient(peerEvent, role, detail, name, peerId) {
+function notifyClient(peerEvent, role, detail, name, peerId, timestamp) {
     if (!window.opener || window.opener.closed) {
         return;
     }
@@ -35,7 +35,8 @@ function notifyClient(peerEvent, role, detail, name, peerId) {
         role: role || null,
         detail: detail || "",
         name: name || "",
-        peerId: peerId || ""
+        peerId: peerId || "",
+        timestamp: timestamp || null
     }, "*");
 }
 
@@ -412,7 +413,8 @@ function setupConnection(connection) {
                 oldUser && oldUser.name
                     ? oldUser.name
                     : "",
-                connection.peer
+                connection.peer,
+                Date.now()
             );
         }
     });
@@ -515,7 +517,8 @@ window.addEventListener("message", function(event) {
                         room: room,
                         name: data.name || "",
                         text: data.text || "",
-                        senderId: data.senderId || ""
+                        senderId: data.senderId || "",
+                        timestamp: data.timestamp || Date.now()
                     });
                 }
             }
