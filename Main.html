@@ -8,7 +8,7 @@
 
 	<meta name="viewport">
 
-	<title>Multiplayer Chat</title>
+	<title>Multiperson Chat</title>
 
 	<style>
 		:root {
@@ -26,11 +26,10 @@
 		}
 
 		body {
-			background-color:
-				var(--background-color);
+			background-color: black;
 
 			font-family:
-				sans-serif;
+				Comic Sans Ms;
 		}
 
 		#wrapper {
@@ -47,30 +46,30 @@
 
 		#chat {
 
-			width:
-				600px;
+			width: 600px;
 
-			height:
-				600px;
+			height: 600px;
 
-			background:
-				white;
+			background: linear-gradient(
+				var(--angle),
+				rgb(87, 0, 0),
+				rgb(0, 0, 0)
+			);
 
-			display:
-				flex;
-
-			flex-direction:
-				column;
-
-			box-sizing:
-				border-box;
+			display: flex;
+			flex-direction: column;
+			box-sizing: border-box;
+			position: relative;
 
 		}
 
 		#nameScreen {
-			background: linear-gradient(var(--angle),
-					rgb(87, 0, 0),
-					rgb(0, 0, 0));
+
+			background: linear-gradient(
+				var(--angle),
+				rgb(87, 0, 0),
+				rgb(0, 0, 0)
+			);
 
 			width:
 				100%;
@@ -99,7 +98,7 @@
 		}
 
 		#nameScreen h1 {
-
+			color: rgba(255, 255, 255, 0.5);
 			margin:
 				0 0 10px 0;
 
@@ -108,7 +107,7 @@
 		#nameScreen p {
 
 			color:
-				#666;
+				white;
 
 			margin:
 				0 0 20px 0;
@@ -130,7 +129,7 @@
 				18px;
 
 			border:
-				1px solid #aaa;
+				2px solid rgb(200, 220, 220);
 
 			outline:
 				none;
@@ -202,12 +201,9 @@
 			box-sizing:
 				border-box;
 
-			color:
-				black;
+			color: rgba(255, 255, 255, 0.7);
 
-			word-wrap:
-				break-word;
-
+			word-wrap: break-word;
 		}
 
 		.message {
@@ -226,24 +222,21 @@
 
 		#status {
 
-			height:
-				24px;
+			height: 26px;
 
-			padding:
-				4px 10px;
+			padding: 4px 10px 20px;
 
-			box-sizing:
-				border-box;
+			box-sizing: border-box;
 
-			background:
-				#ddd;
+			background: rgba(255, 255, 255, 0.2);
 
-			color:
-				#555;
+			color: white;
 
 			font-size:
 				12px;
 
+			border-top:
+				5px ridge rgba(255, 255, 255, 0.5);
 		}
 
 		#inputArea {
@@ -253,10 +246,6 @@
 
 			height:
 				45px;
-
-			border-top:
-				1px solid #aaa;
-
 		}
 
 		#messageInput {
@@ -273,9 +262,11 @@
 			font-size:
 				16px;
 
-			outline:
-				none;
-
+            
+            background: rgba(255, 255, 255, 0.7);
+            
+			border-top:
+				5px ridge rgba(255, 255, 255, 0.5);
 		}
 
 		#sendButton {
@@ -284,7 +275,7 @@
 				80px;
 
 			border:
-				none;
+				5px ridge rgba(255, 255, 255, 0.5);
 
 			background:
 				#333;
@@ -303,6 +294,85 @@
 				#555;
 
 		}
+		
+		#userList {
+        
+            position:
+                absolute;
+        
+            top:
+                10px;
+        
+            right:
+                10px;
+        
+            width:
+                140px;
+        
+            max-height:
+                200px;
+        
+            padding:
+                8px;
+        
+            box-sizing:
+                border-box;
+        
+            background:
+                rgba(0, 0, 0, 0.65);
+        
+            border:
+                2px solid rgba(255, 255, 255, 0.4);
+        
+            color:
+                white;
+        
+            font-size:
+                13px;
+        
+            z-index:
+                10;
+        
+        }
+        
+        #userListTitle {
+        
+            font-weight:
+                bold;
+        
+            margin-bottom:
+                6px;
+        
+            border-bottom:
+                1px solid rgba(255, 255, 255, 0.3);
+        
+            padding-bottom:
+                4px;
+        
+        }
+        
+        #users {
+        
+            overflow-y:
+                auto;
+        
+        }
+        
+        .user {
+        
+            padding:
+                2px 0;
+        
+            white-space:
+                nowrap;
+        
+            overflow:
+                hidden;
+        
+            text-overflow:
+                ellipsis;
+        
+        }
 	</style>
 
 </head>
@@ -312,20 +382,46 @@
 	<div id="wrapper">
 
 		<div id="chat">
+
 			<div id="nameScreen">
 
 				<h1>Sign up</h1>
 
-				<p>Enter the name you want other users to see.</p>
+				<p>
+					Enter the name you want other users to see.
+				</p>
 
-				<input id="nameInput" type="text" placeholder="Your name" maxlength="20" autocomplete="off">
+				<input
+					id="nameInput"
+					type="text"
+					placeholder="Your name"
+					maxlength="20"
+					autocomplete="off"
+				>
 
-				<button id="joinButton">Join Chat</button>
-				<p><br>Once a second window pops up do not close it otherwise it won't work</p>
+				<button id="joinButton">
+					Join Chat
+				</button>
+
+				<p>
+					<br>
+					Once a second window pops up do not close it otherwise it won't work
+				</p>
+
 			</div>
 
-			<div id="chatScreen">
 
+			<div id="chatScreen">
+                <div id="userList">
+                
+                    <div id="userListTitle">
+                        Users Online
+                    </div>
+                
+                    <div id="users">
+                    </div>
+                
+                </div>
 				<div id="messages"></div>
 
 				<div id="status">
@@ -334,7 +430,12 @@
 
 				<div id="inputArea">
 
-					<input id="messageInput" type="text" placeholder="Type a message..." autocomplete="off">
+					<input
+						id="messageInput"
+						type="text"
+						placeholder="Type a message..."
+						autocomplete="off"
+					>
 
 					<button id="sendButton">
 						Send
@@ -344,39 +445,120 @@
 
 			</div>
 
-
 		</div>
 
 	</div>
 
+
 	<script>
-		var nameScreen = document.getElementById("nameScreen");
+		var angle = 0;
+    
+        function update() {
+            angle += 0.1;
+    
+            document.body.style.setProperty(
+                "--angle",
+                angle + "deg"
+            );
+    
+            requestAnimationFrame(update);
+        }
+    
+        update();
+		var nameScreen =
+			document.getElementById(
+				"nameScreen"
+			);
 
-		var nameInput = document.getElementById("nameInput");
 
-		var joinButton = document.getElementById("joinButton");
-
-		var chatScreen = document.getElementById("chatScreen");
-
-		var myName = "";
-
-		var hasJoined = false;
-
-		var messages = document.getElementById("messages");
-
-		var messageInput = document.getElementById("messageInput");
-
-		var sendButton = document.getElementById("sendButton");
-
-		var statusElement = document.getElementById("status");
+		var nameInput =
+			document.getElementById(
+				"nameInput"
+			);
 
 
-		function addMessage(name, text) {
+		var joinButton =
+			document.getElementById(
+				"joinButton"
+			);
+
+
+		var chatScreen =
+			document.getElementById(
+				"chatScreen"
+			);
+
+
+		var myName =
+			"";
+
+
+		var hasJoined =
+			false;
+
+
+		var messages =
+			document.getElementById(
+				"messages"
+			);
+
+
+		var messageInput =
+			document.getElementById(
+				"messageInput"
+			);
+
+
+		var sendButton =
+			document.getElementById(
+				"sendButton"
+			);
+
+
+		var statusElement =
+			document.getElementById(
+				"status"
+			);
+			
+        var usersElement = document.getElementById("users");
+        
+        
+        function updateUserList(users) {
+        
+            usersElement.innerHTML = "";
+        
+            for (var i = 0; i < users.length; i++) {
+                var user =document.createElement("div");
+                
+                user.className = "user";
+                user.textContent = users[i].name || "Unknown";
+                usersElement.appendChild(user);
+            }
+        
+        }
+
+		/*
+		 * This stores the PeerJS ID belonging
+		 * to THIS Main.html window.
+		 *
+		 * The host gets this from room_created.
+		 * Joiners get it from connected.
+		 */
+
+		window.chatPeerId =
+			"";
+
+
+		function addMessage(
+			name,
+			text
+		) {
 
 			var div =
 				document.createElement(
 					"div"
 				);
+
 
 			div.className =
 				"message";
@@ -387,17 +569,21 @@
 					"span"
 				);
 
+
 			nameSpan.className =
 				"name";
 
+
 			nameSpan.textContent =
-				name + ": ";
+				name +
+				": ";
 
 
 			var textSpan =
 				document.createElement(
 					"span"
 				);
+
 
 			textSpan.textContent =
 				text;
@@ -406,6 +592,7 @@
 			div.appendChild(
 				nameSpan
 			);
+
 
 			div.appendChild(
 				textSpan
@@ -423,18 +610,23 @@
 		}
 
 
-		function systemMessage(text) {
+		function systemMessage(
+			text
+		) {
 
 			var div =
 				document.createElement(
 					"div"
 				);
 
+
 			div.className =
 				"message";
 
+
 			div.style.color =
 				"#777";
+
 
 			div.textContent =
 				text;
@@ -450,23 +642,38 @@
 
 		}
 
-		var localDev = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+
+		var localDev =
+			location.hostname ===
+				"localhost" ||
+			location.hostname ===
+				"127.0.0.1";
 
 
-		var RELAY = localDev ? "./p2pRelay.html" : "https://baird101.github.io/RelayWork/p2pRelay.html";
+		var RELAY =
+			localDev
+				? "./p2pRelay.html"
+				: "https://baird101.github.io/RelayWork/p2pRelay.html";
 
 
-		var currentRoom = "main";
+		var currentRoom =
+			"main";
 
 
-		var signalWindow = null;
+		var signalWindow =
+			null;
+        
+		var relayReady =
+			false;
 
 
-		var relayReady = false;
+		var relayOpening =
+			false;
 
-		var relayOpening = false;
 
-		function openRelay(action) {
+		function openRelay(
+			action
+		) {
 
 			if (
 				relayOpening
@@ -500,15 +707,11 @@
 			);
 
 
-			/*
-			 * Give the popup a unique name.
-			 */
-
 			var popupName =
 				"chat-relay-" +
 				Math.random()
-				.toString(36)
-				.substring(2);
+					.toString(36)
+					.substring(2);
 
 
 			signalWindow =
@@ -534,9 +737,11 @@
 				statusElement.textContent =
 					"Popup blocked";
 
+
 				systemMessage(
 					"Allow popups for this site, then reload."
 				);
+
 
 				return false;
 
@@ -559,13 +764,15 @@
 
 					signalWindow.close();
 
-				} catch (err) {}
+				}
+				catch (err) {}
 
 			}
 
 
 			signalWindow =
 				null;
+
 
 			relayReady =
 				false;
@@ -589,11 +796,14 @@
 
 				{
 
-					type: "set_name",
+					type:
+						"set_name",
 
-					room: currentRoom,
+					room:
+						currentRoom,
 
-					name: myName
+					name:
+						myName
 
 				},
 
@@ -604,204 +814,176 @@
 		}
 
 
-		window.addEventListener("message", function(event) {
-
-			/*
-			 * Only accept messages from
-			 * our relay popup.
-			 */
-
-			if (
-				!signalWindow ||
-				event.source !== signalWindow
-			) {
-
-				return;
-
-			}
-
-
-			var msg =
-				event.data || {};
-
-			/*
-			 * Debug: log all messages received
-			 */
-			console.log(
-				"Main received from relay:",
-				msg
-			);
-
-			if (
-				msg.room &&
-				msg.room !== currentRoom
-			) {
-
-				return;
-
-			}
-
-
-			if (
-				msg.type === "relay_event" &&
-				msg.peerEvent === "lobby_exists"
-			) {
-
-				statusElement.textContent =
-					"Lobby found. Joining...";
-
-
-				closeRelay();
-
-
-				setTimeout(
-
-					function() {
-
-						openRelay(
-							"join"
-						);
-
-					},
-
-					250
-
-				);
-
-
-				return;
-
-			}
-
-			if (
-				msg.type === "relay_event" &&
-				msg.peerEvent === "connected"
-			) {
-
-				relayReady =
-					true;
-
-
-				window.chatPeerId =
-					msg.peerId;
-
-
-				statusElement.textContent =
-					"Connected";
-
-
-				sendNameToRelay();
-
-
-				systemMessage(
-					"You connected to the lobby."
-				);
-
-
-				return;
-
-			}
-
-			if (
-				msg.type === "relay_event" &&
-				msg.peerEvent === "user_joined"
-			) {
-
-				if (
-					msg.name
-				) {
-
-					systemMessage(
-
-						msg.name +
-						" joined the lobby."
-
-					);
-
-				}
-
-				return;
-
-			}
-
-
-			if (
-				msg.type === "relay_event" &&
-				msg.peerEvent === "user_left"
-			) {
-
-				if (
-					msg.name
-				) {
-
-					systemMessage(
-
-						msg.name +
-						" left the lobby."
-
-					);
-
-				}
-
-				return;
-
-			}
-
-			if (
-				msg.type === "chat"
-			) {
+		window.addEventListener(
+			"message",
+			function(event) {
 
 				/*
-				 * The sender already displayed
-				 * their own message.
-				 *
-				 * Therefore ignore our own
-				 * copy from the relay.
+				 * Only accept messages from
+				 * our relay popup.
 				 */
 
 				if (
-					msg.senderId !==
-					window.chatPeerId
+					!signalWindow ||
+					event.source !==
+						signalWindow
 				) {
 
-					addMessage(
-
-						msg.name ||
-						"Unknown",
-
-						msg.text ||
-						""
-
-					);
+					return;
 
 				}
 
-				return;
 
-			}
-
-			if (
-				msg.type === "relay_event" &&
-				msg.peerEvent === "error"
-			) {
-
-				statusElement.textContent =
-					"Relay error";
+				var msg =
+					event.data ||
+					{};
 
 
-				systemMessage(
-
-					msg.detail ||
-					"Unknown relay error."
-
+				console.log(
+					"Main received from relay:",
+					msg
 				);
 
 
-				return;
+				if (
+					msg.room &&
+					msg.room !==
+						currentRoom
+				) {
+
+					return;
+
+				}
+
+				if (
+					msg.type ===
+						"relay_event" &&
+					msg.peerEvent ===
+						"lobby_exists"
+				) {
+
+					statusElement.textContent =
+						"Lobby found. Joining...";
+
+
+					closeRelay();
+
+
+					setTimeout(
+						function() {
+
+							openRelay(
+								"join"
+							);
+
+						},
+						250
+					);
+
+
+					return;
+
+				}
+
+				if (msg.type === "relay_event" && msg.peerEvent === "room_created") {
+
+					/*
+					 * IMPORTANT:
+					 *
+					 * The host does not receive
+					 * "connected", so its PeerJS ID
+					 * must be set here.
+					 */
+
+					relayReady = true;
+
+
+					window.chatPeerId = msg.peerId || "";
+
+
+					statusElement.textContent = "Connected";
+
+
+					sendNameToRelay();
+
+
+					systemMessage("You connected to the lobby.");
+
+					return;
+
+				}
+
+				if (msg.type === "relay_event" && msg.peerEvent === "connected") {
+					relayReady = true;
+
+					window.chatPeerId = msg.peerId || "";
+
+					statusElement.textContent = "Connected";
+
+					sendNameToRelay();
+
+
+					systemMessage("You connected to the lobby.");
+
+					return;
+				}
+
+				if (msg.type === "relay_event" && msg.peerEvent === "user_joined") {
+					if (msg.name) {
+						systemMessage(msg.name +" joined the lobby.");
+					}
+					return;
+
+				}
+
+				if (msg.type === "relay_event" && msg.peerEvent === "user_left") {
+					if (msg.name) {
+						systemMessage(msg.name + " left the lobby.");
+					}
+
+					return;
+				}
+
+				if (msg.type === "chat") {
+
+					/*
+					 * The sender already displayed
+					 * their own message locally.
+					 *
+					 * If the sender ID matches this
+					 * Main.html's PeerJS ID, ignore
+					 * the relay copy.
+					 */
+
+					if (msg.senderId !== window.chatPeerId) {
+						addMessage(msg.name || "Unknown", msg.text || "");
+					}
+
+					return;
+
+				}
+
+
+				if (msg.type === "relay_event" && msg.peerEvent === "error") {
+
+					statusElement.textContent =
+						"Relay error";
+
+
+					systemMessage(
+
+						msg.detail ||
+						"Unknown relay error."
+
+					);
+
+
+					return;
+
+				}
 
 			}
-
-		});
+		);
 
 
 		function sendChat() {
@@ -829,6 +1011,7 @@
 					"Not connected yet."
 				);
 
+
 				return;
 
 			}
@@ -836,15 +1019,20 @@
 
 			var message = {
 
-				type: "chat_send",
+				type:
+					"chat_send",
 
-				room: currentRoom,
+				room:
+					currentRoom,
 
-				name: myName,
+				name:
+					myName,
 
-				text: text,
+				text:
+					text,
 
-				senderId: window.chatPeerId
+				senderId:
+					window.chatPeerId
 
 			};
 
@@ -860,7 +1048,7 @@
 
 
 			/*
-			 * Send it to the relay.
+			 * Send to relay.
 			 */
 
 			signalWindow.postMessage(
@@ -872,25 +1060,30 @@
 			messageInput.value =
 				"";
 
+
 			messageInput.focus();
 
 		}
 
 
-		sendButton.onclick = sendChat;
+		sendButton.onclick =
+			sendChat;
 
 
-		messageInput.onkeydown = function(event) {
+		messageInput.onkeydown =
+			function(event) {
 
-			if (
-				event.key === "Enter"
-			) {
+				if (
+					event.key ===
+					"Enter"
+				) {
 
-				sendChat();
+					sendChat();
 
-			}
+				}
 
-		};
+			};
+
 
 		function joinLobby() {
 
@@ -924,6 +1117,7 @@
 			) {
 
 				nameInput.focus();
+
 
 				return;
 
@@ -960,20 +1154,24 @@
 		}
 
 
-		joinButton.onclick = enterLobby;
+		joinButton.onclick =
+			enterLobby;
 
 
-		nameInput.onkeydown = function(event) {
+		nameInput.onkeydown =
+			function(event) {
 
-			if (
-				event.key === "Enter"
-			) {
+				if (
+					event.key ===
+					"Enter"
+				) {
 
-				enterLobby();
+					enterLobby();
 
-			}
+				}
 
-		};
+			};
+
 	</script>
 
 </body>
