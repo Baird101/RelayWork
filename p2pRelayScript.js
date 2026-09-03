@@ -188,8 +188,6 @@ function setupConnection(connection) {
 
             if (action === "create") {
 
-                hostName = data.name || "";
-
                 if (user) {
                     user.name = data.name || "";
                 }

@@ -834,11 +834,14 @@
 				}
 
 
-				var msg =
-					event.data ||
-					{};
+				var msg = event.data || {};
 
+        		if (msg.type === "relay_event" && msg.peerEvent === "user_list") {
 
+					updateUserList(msg.users || []);
+
+					return;
+				}
 				console.log(
 					"Main received from relay:",
 					msg
@@ -928,11 +931,6 @@
 					return;
 				}
 
-        		if (msg.type === "relay_event" && msg.peerEvent === "user_list") {
-        
-                    updateUserList(msg.users || []);
-        
-        		}
         		
 				if (msg.type === "relay_event" && msg.peerEvent === "user_joined") {
 					if (msg.name) {
