@@ -280,11 +280,10 @@ function setupConnection(connection) {
                 var message = {
                     type: "chat",
                     room: room,
-                    name: data.name ||
-                        (user && user.name) ||
-                        "Unknown",
+                    name: data.name || (user ? user.name : "") || "Unknown",
                     text: data.text || "",
-                    senderId: data.senderId || ""
+                    senderId: data.senderId || "",
+                    timestamp: data.timestamp || Date.now()
                 };
 
                 /*
@@ -487,7 +486,8 @@ window.addEventListener("message", function(event) {
                 room: room,
                 name: data.name || hostName || "Unknown",
                 text: data.text || "",
-                senderId: data.senderId || ""
+                senderId: data.senderId || "",
+                timestamp: data.timestamp || Date.now()
             };
 
             /*

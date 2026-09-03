@@ -382,6 +382,19 @@
                 ellipsis;
         
         }
+
+		.timestamp {
+
+			color:
+				rgba(255, 255, 255, 0.4);
+
+			font-size:
+				11px;
+
+			margin-right:
+				5px;
+
+		}
 	</style>
 
 </head>
@@ -560,14 +573,19 @@
 
 		function addMessage(
 			name,
-			text
+			text,
+    		timestamp
 		) {
 
-			var div =
-				document.createElement(
+			var div = document.createElement(
 					"div"
 				);
 
+			var timeSpan = document.createElement("span");
+
+			timeSpan.className = "timestamp";
+
+			timeSpan.textContent = timestamp ? new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(timestamp)) + " " : "";
 
 			div.className =
 				"message";
@@ -598,19 +616,14 @@
 				text;
 
 
-			div.appendChild(
-				nameSpan
-			);
+			div.appendChild(timeSpan);
+
+			div.appendChild(nameSpan);
+
+			div.appendChild(textSpan);
 
 
-			div.appendChild(
-				textSpan
-			);
-
-
-			messages.appendChild(
-				div
-			);
+			messages.appendChild(div);
 
 
 			messages.scrollTop =
@@ -969,7 +982,7 @@
 					 */
 
 					if (msg.senderId !== window.chatPeerId) {
-						addMessage(msg.name || "Unknown", msg.text || "");
+						addMessage(msg.name || "Unknown", msg.text || "", msg.timestamp);
 					}
 
 					return;
@@ -1031,22 +1044,12 @@
 
 
 			var message = {
-
-				type:
-					"chat_send",
-
-				room:
-					currentRoom,
-
-				name:
-					myName,
-
-				text:
-					text,
-
-				senderId:
-					window.chatPeerId
-
+				type: "chat_send",
+				room:currentRoom,
+				name: myName,
+				text: text,
+				senderId: window.chatPeerId,
+				timestamp: Date.now(),
 			};
 
 
@@ -1056,7 +1059,8 @@
 
 			addMessage(
 				myName,
-				text
+				text,
+				message.timestamp
 			);
 
 
