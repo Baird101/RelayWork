@@ -156,11 +156,27 @@ function setupConnection(connection) {
     var user = findConnection(connection);
 
     connection.on("open", function() {
+
         updateLobbyDisplay();
 
         if (action === "join") {
-            notifyClient("connected", "joiner", "", "", peer.id);
+
+            notifyClient(
+                "connected",
+                "joiner",
+                "",
+                "",
+                peer.id
+            );
+
         }
+
+        if (action === "create") {
+
+            sendUserList();
+
+        }
+
     });
 
     connection.on("data", function(data) {
@@ -170,27 +186,40 @@ function setupConnection(connection) {
 
         if (data.type === "set_name") {
 
-                if (action === "create") {
-                    hostName = data.name || "";
-                    sendUserList();
-                    return;
+            if (action === "create") {
+
+                hostName = data.name || "";
+
+                if (user) {
+                    user.name = data.name || "";
                 }
 
-                else if (action === "join") {
-                    if (connections.length > 0) {
-                        var hostConnection = connections[0].connection;
+                sendUserList();
 
-                        if (hostConnection.open) {
-                            hostConnection.send({
-                                type: "set_name",
-                                name: data.name || ""
-                            });
-                        }
+                return;
+            }
+
+            else if (action === "join") {
+
+                if (connections.length > 0) {
+
+                    var hostConnection =
+                        connections[0].connection;
+
+                    if (hostConnection.open) {
+
+                        hostConnection.send({
+                            type: "set_name",
+                            name: data.name || ""
+                        });
+
                     }
 
-                    return;
                 }
+
+                return;
             }
+        }
 
         if (data.type === "user_disconnect") {
             if (action === "create") {
@@ -273,28 +302,36 @@ function setupConnection(connection) {
     });
 
     connection.on("close", function() {
-        var oldUser = removeConnection(connection);
+
+        var oldUser =
+            removeConnection(connection);
 
         updateLobbyDisplay();
 
         if (action === "create") {
+
             var leftEvent = {
                 type: "relay_event",
                 room: room,
                 peerEvent: "user_left",
                 role: "joiner",
                 detail: "",
-                name: oldUser && oldUser.name
-                    ? oldUser.name
-                    : "Unknown",
+                name:
+                    oldUser && oldUser.name
+                        ? oldUser.name
+                        : "Unknown",
                 peerId: connection.peer
             };
 
             notifyMain(leftEvent);
             broadcast(leftEvent);
+
+            sendUserList();
+
         }
 
         else if (action === "join") {
+
             notifyClient(
                 "user_left",
                 null,
@@ -302,7 +339,9 @@ function setupConnection(connection) {
                 "",
                 connection.peer
             );
+
         }
+
     });
 
     connection.on("error", function(error) {
