@@ -256,13 +256,21 @@ function setupConnection(connection) {
             return;
         }
 
-        if (
-            data.type === "relay_event" &&
-            (
-                data.peerEvent === "user_joined" ||
-                data.peerEvent === "user_left"
-            )
-        ) {
+        if (data.type === "chat") {
+
+            notifyMain(data);
+
+            return;
+
+        }
+        if (data.type === "relay_event" && data.peerEvent === "user_list") {
+
+            notifyMain(data);
+
+            return;
+
+        }
+        if (data.type === "relay_event" && (data.peerEvent === "user_joined" || data.peerEvent === "user_left")) {
             notifyMain(data);
             return;
         }
