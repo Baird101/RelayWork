@@ -465,25 +465,36 @@
         }
     
         update();
-		var nameScreen = document.getElementById(
-			"nameScreen"
-		);
+		var nameScreen =
+			document.getElementById(
+				"nameScreen"
+			);
 
-		var nameInput = document.getElementById(
-			"nameInput"
-		);
 
-		var joinButton = document.getElementById(
-			"joinButton"
-		);
+		var nameInput =
+			document.getElementById(
+				"nameInput"
+			);
 
-		var chatScreen = document.getElementById(
-			"chatScreen"
-		);
 
-		var myName = "";
+		var joinButton =
+			document.getElementById(
+				"joinButton"
+			);
 
-		var hasJoined = false;
+
+		var chatScreen =
+			document.getElementById(
+				"chatScreen"
+			);
+
+
+		var myName =
+			"";
+
+
+		var hasJoined =
+			false;
 
 
 		var messages =
@@ -525,13 +536,7 @@
             }
         
         }
-		if (msg.type === "relay_event" && msg.peerEvent === "user_list") {
 
-			updateUserList(msg.users || []);
-
-			return;
-
-		}
 		/*
 		 * This stores the PeerJS ID belonging
 		 * to THIS Main.html window.
@@ -540,7 +545,8 @@
 		 * Joiners get it from connected.
 		 */
 
-		window.chatPeerId = "";
+		window.chatPeerId =
+			"";
 
 
 		function addMessage(
@@ -922,6 +928,12 @@
 					return;
 				}
 
+        		if (msg.type === "relay_event" && msg.peerEvent === "user_list") {
+        
+                    updateUserList(msg.users || []);
+        
+        		}
+        		
 				if (msg.type === "relay_event" && msg.peerEvent === "user_joined") {
 					if (msg.name) {
 						systemMessage(msg.name +" joined the lobby.");
