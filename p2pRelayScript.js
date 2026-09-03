@@ -7,44 +7,6 @@ var connections = [];
 var hostName = "";
 var connectionIds = [];
 
-function sendUserList() {
-
-    var users = [];
-
-    if (hostName !== "") {
-        users.push({
-            name: hostName,
-            peerId: peer.id
-        });
-    }
-
-    for (var i = 0; i < connections.length; i++) {
-
-        users.push({
-            name: connections[i].name || "Unknown",
-            peerId: connections[i].peerId
-        });
-
-    }
-
-    var message = {
-        type: "relay_event",
-        room: room,
-        peerEvent: "user_list",
-        users: users
-    };
-
-    /*
-     * Send to this relay's Main.html.
-     */
-    notifyMain(message);
-
-    /*
-     * Send the complete list to connected relays.
-     */
-    broadcast(message);
-}
-
 function setStatus(text) {
     var element = document.getElementById("status");
 
@@ -87,16 +49,20 @@ function notifyMain(data) {
 
 function addConnection(connection) {
     if (connectionIds.indexOf(connection.peer) !== -1) {
-        return;
+        return null;
     }
 
     connectionIds.push(connection.peer);
 
-    connections.push({
+    var user = {
         connection: connection,
         name: "",
         peerId: connection.peer
-    });
+    };
+
+    connections.push(user);
+
+    return user;
 }
 
 function findConnection(connection) {
@@ -131,7 +97,12 @@ function removeConnection(connection) {
 
 function updateLobbyDisplay() {
     setStatus("Connected users: " + connections.length);
-    setLobby("Lobby: " + room + "\nUsers connected: " + connections.length);
+    setLobby(
+        "Lobby: " +
+        room +
+        "\nUsers connected: " +
+        connections.length
+    );
 }
 
 function broadcast(data, exceptConnection) {
@@ -142,25 +113,61 @@ function broadcast(data, exceptConnection) {
             continue;
         }
 
-        if (connection.open) {
-            try {
-                connection.send(data);
-            } catch (error) {}
+        if (!connection.open) {
+            continue;
         }
+
+        try {
+            connection.send(data);
+        } catch (error) {}
     }
 }
 
-function setupConnection(connection) {
-    addConnection(connection);
+function sendUserList() {
+    if (action !== "create") {
+        return;
+    }
 
-    var user = findConnection(connection);
+    var users = [];
+
+    if (hostName !== "") {
+        users.push({
+            name: hostName,
+            peerId: peer.id
+        });
+    }
+
+    for (var i = 0; i < connections.length; i++) {
+        if (connections[i].name !== "") {
+            users.push({
+                name: connections[i].name,
+                peerId: connections[i].peerId
+            });
+        }
+    }
+
+    var message = {
+        type: "relay_event",
+        room: room,
+        peerEvent: "user_list",
+        users: users
+    };
+
+    notifyMain(message);
+    broadcast(message);
+}
+
+function setupConnection(connection) {
+    var user = addConnection(connection);
+
+    if (!user) {
+        return;
+    }
 
     connection.on("open", function() {
-
         updateLobbyDisplay();
 
         if (action === "join") {
-
             notifyClient(
                 "connected",
                 "joiner",
@@ -168,15 +175,19 @@ function setupConnection(connection) {
                 "",
                 peer.id
             );
-
         }
 
         if (action === "create") {
-
+            /*
+             * Tell the new joiner what the current
+             * user list is.
+             *
+             * At this point their name may not be
+             * known yet, so do NOT add them as
+             * "Unknown".
+             */
             sendUserList();
-
         }
-
     });
 
     connection.on("data", function(data) {
@@ -184,66 +195,159 @@ function setupConnection(connection) {
             return;
         }
 
+        /*
+         * JOINER RELAY:
+         *
+         * A name sent by this Main window needs
+         * to be forwarded to the host relay.
+         */
         if (data.type === "set_name") {
-
-            if (action === "create") {
-
-                if (user) {
-                    user.name = data.name || "";
+            if (action === "join") {
+                if (connection.open) {
+                    connection.send({
+                        type: "set_name",
+                        name: data.name || ""
+                    });
                 }
+
+                return;
+            }
+
+            /*
+             * HOST RELAY:
+             *
+             * This is the name belonging to this
+             * particular connection.
+             */
+            if (action === "create") {
+                user.name = data.name || "";
 
                 sendUserList();
 
+                /*
+                 * Tell everyone that this user
+                 * has joined now that we know
+                 * their actual name.
+                 */
+                var joinedEvent = {
+                    type: "relay_event",
+                    room: room,
+                    peerEvent: "user_joined",
+                    role: "joiner",
+                    detail: "",
+                    name: user.name,
+                    peerId: user.peerId
+                };
+
+                notifyMain(joinedEvent);
+                broadcast(joinedEvent, connection);
+
                 return;
             }
+        }
 
-            else if (action === "join") {
-
-                if (connections.length > 0) {
-
-                    var hostConnection =
-                        connections[0].connection;
-
-                    if (hostConnection.open) {
-
-                        hostConnection.send({
-                            type: "set_name",
-                            name: data.name || ""
-                        });
-
-                    }
-
+        /*
+         * CHAT
+         *
+         * Joiner -> host
+         */
+        if (data.type === "chat_send") {
+            if (action === "join") {
+                if (connection.open) {
+                    connection.send({
+                        type: "chat_send",
+                        room: room,
+                        name: data.name || "",
+                        text: data.text || "",
+                        senderId: data.senderId || ""
+                    });
                 }
 
                 return;
             }
-        }
 
-        if (data.type === "user_disconnect") {
+            /*
+             * Host receives a chat from one
+             * of the joiners.
+             */
             if (action === "create") {
-                var disconnectedUser = removeConnection(connection);
+                if (user) {
+                    if (data.name) {
+                        user.name = data.name;
+                    }
+                }
 
-                var leftEvent = {
-                    type: "relay_event",
+                var message = {
+                    type: "chat",
                     room: room,
-                    peerEvent: "user_left",
-                    role: "joiner",
-                    detail: "",
-                    name: disconnectedUser && disconnectedUser.name
-                        ? disconnectedUser.name
-                        : "Unknown",
-                    peerId: connection.peer
+                    name: data.name ||
+                        (user && user.name) ||
+                        "Unknown",
+                    text: data.text || "",
+                    senderId: data.senderId || ""
                 };
 
-                updateLobbyDisplay();
-                notifyMain(leftEvent);
-                broadcast(leftEvent);
+                /*
+                 * Send the message to every OTHER
+                 * relay. This is what allows
+                 * joiner A to talk to joiner B.
+                 */
+                broadcast(message, connection);
+
+                /*
+                 * Also show it to the host Main.
+                 */
+                notifyMain(message);
+
+                return;
             }
-            
-            sendUserList();
+        }
+
+        /*
+         * CHAT RECEIVED FROM HOST
+         *
+         * A joiner relay does not rebroadcast it.
+         * It simply gives it to its Main.html.
+         */
+        if (data.type === "chat") {
+            if (action === "join") {
+                notifyMain(data);
+            }
+
             return;
         }
 
+        /*
+         * USER LIST RECEIVED FROM HOST
+         *
+         * Joiner relays simply pass the authoritative
+         * list to their Main.html.
+         */
+        if (
+            data.type === "relay_event" &&
+            data.peerEvent === "user_list"
+        ) {
+            notifyMain(data);
+            return;
+        }
+
+        /*
+         * Other relay events.
+         */
+        if (
+            data.type === "relay_event" &&
+            (
+                data.peerEvent === "user_joined" ||
+                data.peerEvent === "user_left"
+            )
+        ) {
+            notifyMain(data);
+            return;
+        }
+
+        /*
+         * SIGNAL DATA
+         */
         if (data.type === "signal_send") {
             if (action === "create") {
                 broadcast({
@@ -254,60 +358,31 @@ function setupConnection(connection) {
             }
 
             else if (action === "join") {
-                broadcast({
-                    type: "signal_data",
-                    room: room,
-                    payload: data.payload
-                }, connection);
+                if (connection.open) {
+                    connection.send({
+                        type: "signal_send",
+                        room: room,
+                        payload: data.payload
+                    });
+                }
             }
 
             return;
         }
-
-        if (data.type === "chat_send") {
-            if (user) {
-                user.name = data.name || user.name || "";
-            }
-
-            var message = {
-                type: "chat",
-                room: room,
-                name: data.name || (user ? user.name : "") || "Unknown",
-                text: data.text || "",
-                senderId: data.senderId || ""
-            };
-
-            broadcast(message, connection);
-            notifyMain(message);
-
-            return;
-        }
-
-        if (data.type === "chat") {
-
-            notifyMain(data);
-
-            return;
-
-        }
-        if (data.type === "relay_event" && (data.peerEvent === "user_list" || data.peerEvent === "user_joined" || data.peerEvent === "user_left")) {
-            notifyMain(data);
-            return;
-        }
-
-        broadcast(data, connection);
-        notifyMain(data);
     });
 
+    /*
+     * THIS IS THE ONLY PLACE THAT HANDLES
+     * A CONNECTION LEAVING.
+     *
+     * Do NOT also use user_disconnect.
+     */
     connection.on("close", function() {
-
-        var oldUser =
-            removeConnection(connection);
+        var oldUser = removeConnection(connection);
 
         updateLobbyDisplay();
 
         if (action === "create") {
-
             var leftEvent = {
                 type: "relay_event",
                 room: room,
@@ -325,23 +400,23 @@ function setupConnection(connection) {
             broadcast(leftEvent);
 
             sendUserList();
-
         }
 
         else if (action === "join") {
-
+            /*
+             * The joiner's connection to the host
+             * closed. Tell this Main window.
+             */
             notifyClient(
                 "user_left",
                 null,
                 "",
                 oldUser && oldUser.name
                     ? oldUser.name
-                    : "Unknown",
+                    : "",
                 connection.peer
             );
-
         }
-
     });
 
     connection.on("error", function(error) {
@@ -366,41 +441,93 @@ window.addEventListener("message", function(event) {
         return;
     }
 
+    /*
+     * HOST NAME
+     *
+     * This is the name belonging to this
+     * relay's Main window.
+     */
     if (data.type === "set_name") {
-
         if (action === "create") {
-
-            if (user) {
-                user.name = data.name || "";
-            }
+            hostName = data.name || "";
 
             sendUserList();
 
             return;
         }
 
-        else if (action === "join") {
-
+        /*
+         * JOINER NAME
+         *
+         * Forward it to the host relay.
+         */
+        if (action === "join") {
             if (connections.length > 0) {
-
-                var hostConnection =
-                    connections[0].connection;
+                var hostConnection = connections[0].connection;
 
                 if (hostConnection.open) {
-
                     hostConnection.send({
                         type: "set_name",
                         name: data.name || ""
                     });
-
                 }
-
             }
 
             return;
         }
     }
 
+    /*
+     * HOST Main -> host relay
+     */
+    if (data.type === "chat_send") {
+        if (action === "create") {
+            var hostMessage = {
+                type: "chat",
+                room: room,
+                name: data.name || hostName || "Unknown",
+                text: data.text || "",
+                senderId: data.senderId || ""
+            };
+
+            /*
+             * Send host messages to ALL joiners.
+             */
+            broadcast(hostMessage);
+
+            /*
+             * Host already displays its own message,
+             * so do not send it back to itself.
+             */
+
+            return;
+        }
+
+        /*
+         * JOINER Main -> joiner relay -> host relay
+         */
+        if (action === "join") {
+            if (connections.length > 0) {
+                var hostConnection = connections[0].connection;
+
+                if (hostConnection.open) {
+                    hostConnection.send({
+                        type: "chat_send",
+                        room: room,
+                        name: data.name || "",
+                        text: data.text || "",
+                        senderId: data.senderId || ""
+                    });
+                }
+            }
+
+            return;
+        }
+    }
+
+    /*
+     * SIGNAL DATA
+     */
     if (data.type === "signal_send") {
         if (action === "create") {
             broadcast({
@@ -412,7 +539,7 @@ window.addEventListener("message", function(event) {
             return;
         }
 
-        else if (action === "join") {
+        if (action === "join") {
             if (connections.length > 0) {
                 var hostConnection = connections[0].connection;
 
@@ -429,31 +556,15 @@ window.addEventListener("message", function(event) {
         }
     }
 
-    if (data.type === "chat_send") {
-        var message = {
-            type: "chat",
-            room: room,
-            name: data.name || hostName || "Unknown",
-            text: data.text || "",
-            senderId: data.senderId || ""
-        };
-
-        broadcast(message);
-        notifyMain(message);
-
-        return;
-    }
-
-    if (data.type === "user_disconnect") {
-
-        if (action === "create") {
-            removeConnection(connection);
-            updateLobbyDisplay();
-            sendUserList();
-        }
-
-        return;
-    }
+    /*
+     * IMPORTANT:
+     *
+     * There is intentionally NO user_disconnect
+     * handling here.
+     *
+     * PeerJS close() is the authoritative
+     * disconnect event.
+     */
 
     broadcast(data);
     notifyMain(data);
@@ -604,18 +715,12 @@ var parentCheckTimer = setInterval(function() {
     if (!window.opener || window.opener.closed) {
         clearInterval(parentCheckTimer);
 
-        if (action === "join" && connections.length > 0) {
-            var hostConnection = connections[0].connection;
-
-            if (hostConnection.open) {
-                try {
-                    hostConnection.send({
-                        type: "user_disconnect"
-                    });
-                } catch (error) {}
-            }
-        }
-
+        /*
+         * Do NOT send user_disconnect here.
+         *
+         * Destroying the PeerJS connection will
+         * cause the host's "close" handler to fire.
+         */
         if (peer && !peer.destroyed) {
             try {
                 peer.destroy();
@@ -650,4 +755,3 @@ else {
     setStatus("Unknown action.");
     setLobby("Unknown action.");
 }
-
