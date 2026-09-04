@@ -1,3 +1,5 @@
+Make it bug out Mwahahahaha Ace rogers will never be able to stop me now. I have taken over the world and there is nothing anyone can do about it. The world is mine and I will rule it with an iron fist. No one can stop me, not even Ace Rogers. I am the ultimate villain and I will crush anyone who stands in my way. Mwahahahaha!
+
 var params = new URLSearchParams(window.location.search);
 var action = params.get("action");
 var room = params.get("room");
