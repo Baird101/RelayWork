@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- 
+<!--
 New stuff
  * Timestamps
  * Online user list
@@ -33,344 +33,194 @@ New stuff
 
 		body {
 			background-color: black;
-
-			font-family:
-				Comic Sans Ms;
+			font-family: Comic Sans Ms;
 		}
 
 		#wrapper {
-
 			display: flex;
-
-			justify-content:
-				center;
-
-			align-items:
-				center;
-
+			justify-content: center;
+			align-items: center;
 		}
 
 		#chat {
-
 			width: 600px;
-
 			height: 600px;
-
-			background: linear-gradient(
-				var(--angle),
-				rgb(87, 0, 0),
-				rgb(0, 0, 0)
-			);
-
+			background: linear-gradient(var(--angle), rgb(87, 0, 0), rgb(0, 0, 0));
 			display: flex;
 			flex-direction: column;
 			box-sizing: border-box;
 			position: relative;
-
 		}
 
 		#nameScreen {
-			background: linear-gradient(
-				var(--angle),
-				rgb(87, 0, 0),
-				rgb(0, 0, 0)
-			);
-
+			background: linear-gradient(var(--angle), rgb(87, 0, 0), rgb(0, 0, 0));
 			width: 100%;
-
 			height: 100%;
-			
 			display: flex;
-			
 			flex-direction: column;
-			
 			justify-content: center;
-			
 			align-items: center;
-			
 			box-sizing: border-box;
-			
 			padding: 30px;
-
 		}
 
 		#nameScreen h1 {
 			color: rgba(255, 255, 255, 0.5);
-			
 			margin: 0 0 10px 0;
-
 		}
 
 		#nameScreen p {
 			color: white;
-			
 			margin: 0 0 20px 0;
 		}
 
 		#nameInput {
-
 			width: 300px;
-
 			box-sizing: border-box;
-
 			padding: 12px;
-
 			font-size: 18px;
-
 			border: 5px ridge rgb(255, 255, 255);
-            
 			background: rgba(255, 255, 255, 0.4);
-			
 			color: white;
 		}
-		
+
 		#nameInput:hover {
-
 			background: rgba(255, 255, 255, 0.5);
-
 		}
+
 		#nameInput::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
+			color: rgba(255, 255, 255, 0.6);
+		}
 
 		#joinButton {
-
 			width: 300px;
-
 			margin-top: 10px;
-
 			padding: 12px;
-
 			background: rgba(255, 255, 255, 0.4);
-
 			color: white;
-
-
 			font-size: 16px;
-
 			cursor: pointer;
-				
 			border: 5px ridge rgba(255, 255, 255, 0.5);
-
 		}
 
 		#joinButton:hover {
-
 			background: rgba(255, 255, 255, 0.5);
-
 		}
 
 		#chatScreen {
-
-			width:
-				100%;
-
-			height:
-				100%;
-
-			display:
-				none;
-
-			flex-direction:
-				column;
-
+			width: 100%;
+			height: 100%;
+			display: none;
+			flex-direction: column;
 		}
 
 		#messages {
-
-			flex:
-				1;
-
-			overflow-y:
-				auto;
-
-			padding:
-				12px;
-
-			box-sizing:
-				border-box;
-
+			flex: 1;
+			overflow-y: auto;
+			padding: 12px;
+			box-sizing: border-box;
 			color: rgba(255, 255, 255, 0.7);
-
 			word-wrap: break-word;
 		}
 
 		.message {
-        
-            margin-bottom:
-                8px;
-        
-            max-width:
-                460px;
-        
-            overflow-wrap:
-                anywhere;
-        
-            word-break:
-                break-word;
-        
-        }
+			margin-bottom: 8px;
+			max-width: 460px;
+			overflow-wrap: anywhere;
+			word-break: break-word;
+		}
+
+		.messageHeader {
+			display: flex;
+			align-items: baseline;
+			gap: 6px;
+		}
+
+		.messageText {
+			margin-top: 2px;
+		}
 
 		.name {
-
 			font-weight: bold;
+		}
 
+		.timestamp {
+			color: rgba(255, 255, 255, 0.4);
+			font-size: 11px;
+			margin-right: 5px;
+			margin-left: 8px;
 		}
 
 		#status {
-
 			height: 26px;
-
 			padding: 4px 10px 20px;
-
 			box-sizing: border-box;
-
 			background: rgba(255, 255, 255, 0.2);
-
 			color: white;
-
-			font-size:
-				12px;
-
-			border-top:
-				5px ridge rgba(255, 255, 255, 0.5);
+			font-size: 12px;
+			border-top: 5px ridge rgba(255, 255, 255, 0.5);
 		}
 
 		#inputArea {
-
 			display: flex;
-
 			height: 45px;
 		}
 
 		#messageInput {
-
-			flex:
-				1;
-
-			border:
-				none;
-
-			padding:
-				10px;
-
-			font-size:
-				16px;
-
-            
-            background: rgba(255, 255, 255, 0.7);
-            
-			border-top:
-				5px ridge rgba(255, 255, 255, 0.5);
+			flex: 1;
+			border: none;
+			padding: 10px;
+			font-size: 16px;
+			background: rgba(255, 255, 255, 0.7);
+			border-top: 5px ridge rgba(255, 255, 255, 0.5);
 		}
 
 		#sendButton {
-
-			width:
-				80px;
-
-			border:
-				5px ridge rgba(255, 255, 255, 0.5);
-
-			background:
-				#333;
-
-			color:
-				white;
-
-			cursor:
-				pointer;
-
+			width: 80px;
+			border: 5px ridge rgba(255, 255, 255, 0.5);
+			background: #333;
+			color: white;
+			cursor: pointer;
 		}
 
 		#sendButton:hover {
-
-			background:
-				#555;
-
+			background: #555;
 		}
-		
+
 		#userList {
-        
-            position:
-                absolute;
-        
-            top:
-                10px;
-        
-            right:
-                10px;
-        
-            width:
-                140px;
-        
-            max-height:
-                200px;
-        
-            padding:
-                8px;
-        
-            box-sizing:
-                border-box;
-        
-            background:
-                rgba(0, 0, 0, 0.65);
-        
-            border:
-                2px solid rgba(255, 255, 255, 0.4);
-        
-            color:
-                white;
-        
-            font-size:
-                13px;
-        
-            z-index:
-                10;
-        
-        }
-        
-        #userListTitle {
-        
-            font-weight: bold;
-        
-            margin-bottom: 6px;
-        
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-        
-            padding-bottom: 4px;
-        
-        }
-        
-        #users {
-        
-            overflow-y: auto;
-        
-        }
-        
-        .user {
-        
-            padding: 2px 0;
-        
-            white-space: nowrap;
-        
-            overflow: hidden;
-        
-            text-overflow: ellipsis;
-        
-        }
+			position: absolute;
+			top: 10px;
+			right: 10px;
+			width: 140px;
+			max-height: 200px;
+			padding: 8px;
+			box-sizing: border-box;
+			background: rgba(0, 0, 0, 0.65);
+			border: 2px solid rgba(255, 255, 255, 0.4);
+			color: white;
+			font-size: 13px;
+			z-index: 10;
+			overflow: hidden;
+		}
 
-		.timestamp {
+		#users {
+			max-height: 155px;
+			overflow-y: auto;
+			overflow-x: hidden;
+		}
 
-			color:
-				rgba(255, 255, 255, 0.4);
+		#userListTitle {
+			font-weight: bold;
+			margin-bottom: 6px;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+			padding-bottom: 4px;
+		}
 
-			font-size:
-				11px;
-
-			margin-right:
-				5px;
-
+		.user {
+			padding: 2px 0;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 	</style>
 
@@ -390,13 +240,7 @@ New stuff
 					Enter the name you want other users to see.
 				</p>
 
-				<input
-					id="nameInput"
-					type="text"
-					placeholder="Your name"
-					maxlength="20"
-					autocomplete="off"
-				>
+				<input id="nameInput" type="text" placeholder="Your name" maxlength="20" autocomplete="off">
 
 				<button id="joinButton">
 					Join Chat
@@ -409,18 +253,19 @@ New stuff
 
 			</div>
 
-
 			<div id="chatScreen">
-                <div id="userList">
-                
-                    <div id="userListTitle">
-                        Users Online
-                    </div>
-                
-                    <div id="users">
-                    </div>
-                
-                </div>
+
+				<div id="userList">
+
+					<div id="userListTitle">
+						Users Online
+					</div>
+
+					<div id="users">
+					</div>
+
+				</div>
+
 				<div id="messages"></div>
 
 				<div id="status">
@@ -429,12 +274,7 @@ New stuff
 
 				<div id="inputArea">
 
-					<input
-						id="messageInput"
-						type="text"
-						placeholder="Type a message..."
-						autocomplete="off"
-					>
+					<input id="messageInput" type="text" placeholder="Type a message..." autocomplete="off">
 
 					<button id="sendButton">
 						Send
@@ -448,93 +288,40 @@ New stuff
 
 	</div>
 
-
 	<script>
 		var angle = 0;
-    
-        function update() {
-            angle += 0.1;
-    
-            document.body.style.setProperty(
-                "--angle",
-                angle + "deg"
-            );
-    
-            requestAnimationFrame(update);
-        }
-    
-        update();
-		var nameScreen =
-			document.getElementById(
-				"nameScreen"
-			);
 
+		function update() {
+			angle += 0.1;
+			document.body.style.setProperty("--angle", angle + "deg");
+			requestAnimationFrame(update);
+		}
 
-		var nameInput =
-			document.getElementById(
-				"nameInput"
-			);
+		update();
 
+		var nameScreen = document.getElementById("nameScreen");
+		var nameInput = document.getElementById("nameInput");
+		var joinButton = document.getElementById("joinButton");
+		var chatScreen = document.getElementById("chatScreen");
+		var myName = "";
+		var hasJoined = false;
+		var messages = document.getElementById("messages");
+		var messageInput = document.getElementById("messageInput");
+		var sendButton = document.getElementById("sendButton");
+		var statusElement = document.getElementById("status");
+		var usersElement = document.getElementById("users");
 
-		var joinButton =
-			document.getElementById(
-				"joinButton"
-			);
+		function updateUserList(users) {
+			usersElement.innerHTML = "";
 
+			for (var i = 0; i < users.length; i++) {
+				var user = document.createElement("div");
 
-		var chatScreen =
-			document.getElementById(
-				"chatScreen"
-			);
-
-
-		var myName =
-			"";
-
-
-		var hasJoined =
-			false;
-
-
-		var messages =
-			document.getElementById(
-				"messages"
-			);
-
-
-		var messageInput =
-			document.getElementById(
-				"messageInput"
-			);
-
-
-		var sendButton =
-			document.getElementById(
-				"sendButton"
-			);
-
-
-		var statusElement =
-			document.getElementById(
-				"status"
-			);
-			
-        var usersElement = document.getElementById("users");
-        
-        
-        function updateUserList(users) {
-        
-            usersElement.innerHTML = "";
-        
-            for (var i = 0; i < users.length; i++) {
-                var user =document.createElement("div");
-                
-                user.className = "user";
-                user.textContent = users[i].name || "Unknown";
-                usersElement.appendChild(user);
-            }
-        
-        }
+				user.className = "user";
+				user.textContent = users[i].name || "Unknown";
+				usersElement.appendChild(user);
+			}
+		}
 
 		/*
 		 * This stores the PeerJS ID belonging
@@ -544,483 +331,259 @@ New stuff
 		 * Joiners get it from connected.
 		 */
 
-		window.chatPeerId =
-			"";
+		window.chatPeerId = "";
 
+		function addMessage(name, text, timestamp) {
+			var div = document.createElement("div");
 
-		function addMessage(
-			name,
-			text,
-    		timestamp
-		) {
+			div.className = "message";
 
-			var div = document.createElement(
-					"div"
-				);
+			var header = document.createElement("div");
+			header.className = "messageHeader";
+
+			var nameSpan = document.createElement("span");
+			nameSpan.className = "name";
+			nameSpan.textContent = name;
 
 			var timeSpan = document.createElement("span");
-
 			timeSpan.className = "timestamp";
 
-			timeSpan.textContent = timestamp ? new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(timestamp)) + " " : "";
+			timeSpan.textContent = timestamp
+				? new Intl.DateTimeFormat(undefined, {
+					hour: "numeric",
+					minute: "2-digit"
+				}).format(new Date(timestamp))
+				: "";
 
-			div.className =
-				"message";
+			header.appendChild(nameSpan);
+			header.appendChild(timeSpan);
 
+			var textSpan = document.createElement("div");
+			textSpan.className = "messageText";
+			textSpan.textContent = text;
 
-			var nameSpan =
-				document.createElement(
-					"span"
-				);
-
-
-			nameSpan.className =
-				"name";
-
-
-			nameSpan.textContent =
-				name +
-				": ";
-
-
-			var textSpan =
-				document.createElement(
-					"span"
-				);
-
-
-			textSpan.textContent =
-				text;
-
-
-			div.appendChild(timeSpan);
-
-			div.appendChild(nameSpan);
-
+			div.appendChild(header);
 			div.appendChild(textSpan);
 
-
 			messages.appendChild(div);
-
-
-			messages.scrollTop =
-				messages.scrollHeight;
-
+			messages.scrollTop = messages.scrollHeight;
 		}
 
-
-		function systemMessage(text, timestamp) {
-            var div = document.createElement("div");
+        function systemMessage(text, timestamp) {
+        	var div = document.createElement("div");
         
-            div.className = "message";
+        	div.className = "message";
+        	div.style.color = "#777";
         
+        	var textSpan = document.createElement("span");
+        	textSpan.textContent = text;
         
-            div.style.color = "#777";
+        	div.appendChild(textSpan);
         
+        	if (timestamp) {
+        		var timeSpan = document.createElement("span");
         
-            if (timestamp) {
+        		timeSpan.className = "timestamp";
+        		timeSpan.textContent = new Intl.DateTimeFormat(undefined, {
+        			hour: "numeric",
+        			minute: "2-digit"
+        		}).format(new Date(timestamp));
         
-                var timeSpan = document.createElement("span");
+        		div.appendChild(timeSpan);
+        	}
         
-        
-                timeSpan.className = "timestamp";
-        
-        
-                timeSpan.textContent = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(timestamp)) + " ";
-                
-                div.appendChild(timeSpan);
-        
-            }
-        
-        
-            var textSpan = document.createElement("span");
-        
-        
-            textSpan.textContent = text;
-        
-        
-            div.appendChild(textSpan);
-        
-        
-            messages.appendChild(div);
-        
-        
-            messages.scrollTop = messages.scrollHeight;
-        
+        	messages.appendChild(div);
+        	messages.scrollTop = messages.scrollHeight;
         }
 
+		var localDev = location.hostname === "localhost" || location.hostname === "127.0.0.1";
 
-		var localDev = 
-			location.hostname ===
-				"localhost" ||
-			location.hostname ===
-				"127.0.0.1";
-
-
-		var RELAY =
-			localDev
-				? "./p2pRelay.html"
-				: "https://baird101.github.io/RelayWork/p2pRelay.html";
-
+		var RELAY = localDev
+			? "./p2pRelay.html"
+			: "https://baird101.github.io/RelayWork/p2pRelay.html";
 
 		var currentRoom = "main";
-
 		var signalWindow = null;
-        
 		var relayReady = false;
-
 		var relayOpening = false;
 
 		function openRelay(action) {
-
-			if (
-				relayOpening
-			) {
-
+			if (relayOpening) {
 				return false;
-
 			}
 
+			relayOpening = true;
 
-			relayOpening =
-				true;
+			var url = new URL(RELAY, location.href);
 
+			url.searchParams.set("action", action);
+			url.searchParams.set("room", currentRoom);
 
-			var url =
-				new URL(
-					RELAY,
-					location.href
-				);
+			var popupName = "chat-relay-" + Math.random().toString(36).substring(2);
 
-
-			url.searchParams.set(
-				"action",
-				action
+			signalWindow = window.open(
+				url.toString(),
+				popupName,
+				"width=420,height=320"
 			);
 
+			relayOpening = false;
 
-			url.searchParams.set(
-				"room",
-				currentRoom
-			);
-
-
-			var popupName =
-				"chat-relay-" +
-				Math.random()
-					.toString(36)
-					.substring(2);
-
-
-			signalWindow =
-				window.open(
-
-					url.toString(),
-
-					popupName,
-
-					"width=420,height=320"
-
-				);
-
-
-			relayOpening =
-				false;
-
-
-			if (
-				!signalWindow
-			) {
-
-				statusElement.textContent =
-					"Popup blocked";
-
-
-				systemMessage(
-					"Allow popups for this site, then reload."
-				);
-
-
+			if (!signalWindow) {
+				statusElement.textContent = "Popup blocked";
+				systemMessage("Allow popups for this site, then reload.");
 				return false;
-
 			}
-
 
 			return true;
-
 		}
-
 
 		function closeRelay() {
-
-			if (
-				signalWindow &&
-				!signalWindow.closed
-			) {
-
+			if (signalWindow && !signalWindow.closed) {
 				try {
-
 					signalWindow.close();
-
 				}
 				catch (err) {}
-
 			}
 
-
-			signalWindow =
-				null;
-
-
-			relayReady =
-				false;
-
+			signalWindow = null;
+			relayReady = false;
 		}
-
 
 		function sendNameToRelay() {
-
-			if (
-				!signalWindow ||
-				signalWindow.closed
-			) {
-
+			if (!signalWindow || signalWindow.closed) {
 				return;
-
 			}
 
-
-			signalWindow.postMessage(
-
-				{
-
-					type:
-						"set_name",
-
-					room:
-						currentRoom,
-
-					name:
-						myName
-
-				},
-
-				"*"
-
-			);
-
+			signalWindow.postMessage({
+				type: "set_name",
+				room: currentRoom,
+				name: myName
+			}, "*");
 		}
 
+		window.addEventListener("message", function(event) {
+			/*
+			 * Only accept messages from
+			 * our relay popup.
+			 */
 
-		window.addEventListener(
-			"message",
-			function(event) {
+			if (!signalWindow || event.source !== signalWindow) {
+				return;
+			}
 
+			var msg = event.data || {};
+
+			if (msg.type === "relay_event" && msg.peerEvent === "user_list") {
+				updateUserList(msg.users || []);
+				return;
+			}
+
+			console.log("Main received from relay:", msg);
+
+			if (msg.room && msg.room !== currentRoom) {
+				return;
+			}
+
+			if (msg.type === "relay_event" && msg.peerEvent === "lobby_exists") {
+				statusElement.textContent = "Lobby found. Joining...";
+				closeRelay();
+
+				setTimeout(function() {
+					openRelay("join");
+				}, 250);
+
+				return;
+			}
+
+			if (msg.type === "relay_event" && msg.peerEvent === "room_created") {
 				/*
-				 * Only accept messages from
-				 * our relay popup.
+				 * IMPORTANT:
+				 *
+				 * The host does not receive
+				 * "connected", so its PeerJS ID
+				 * must be set here.
 				 */
 
-				if (
-					!signalWindow ||
-					event.source !==
-						signalWindow
-				) {
+				relayReady = true;
+				window.chatPeerId = msg.peerId || "";
+				statusElement.textContent = "Connected";
+				sendNameToRelay();
+				systemMessage("You connected to the lobby.");
 
-					return;
-
-				}
-
-
-				var msg = event.data || {};
-
-        		if (msg.type === "relay_event" && msg.peerEvent === "user_list") {
-
-					updateUserList(msg.users || []);
-
-					return;
-				}
-				console.log(
-					"Main received from relay:",
-					msg
-				);
-
-
-				if (
-					msg.room &&
-					msg.room !==
-						currentRoom
-				) {
-
-					return;
-
-				}
-
-				if (
-					msg.type ===
-						"relay_event" &&
-					msg.peerEvent ===
-						"lobby_exists"
-				) {
-
-					statusElement.textContent =
-						"Lobby found. Joining...";
-
-
-					closeRelay();
-
-
-					setTimeout(
-						function() {
-
-							openRelay(
-								"join"
-							);
-
-						},
-						250
-					);
-
-
-					return;
-
-				}
-
-				if (msg.type === "relay_event" && msg.peerEvent === "room_created") {
-
-					/*
-					 * IMPORTANT:
-					 *
-					 * The host does not receive
-					 * "connected", so its PeerJS ID
-					 * must be set here.
-					 */
-
-					relayReady = true;
-
-
-					window.chatPeerId = msg.peerId || "";
-
-
-					statusElement.textContent = "Connected";
-
-
-					sendNameToRelay();
-
-
-					systemMessage("You connected to the lobby.");
-
-					return;
-
-				}
-
-				if (msg.type === "relay_event" && msg.peerEvent === "connected") {
-					relayReady = true;
-
-					window.chatPeerId = msg.peerId || "";
-
-					statusElement.textContent = "Connected";
-
-					sendNameToRelay();
-
-
-					systemMessage("You connected to the lobby.");
-
-					return;
-				}
-
-        		
-				if (msg.type === "relay_event" && msg.peerEvent === "user_joined") {
-					if (msg.name) {
-						systemMessage(msg.name + " joined the lobby.", msg.timestamp);
-					}
-					return;
-				}
-
-				if (msg.type === "relay_event" && msg.peerEvent === "user_left") {
-					if (msg.name) {
-						systemMessage(msg.name + " left the lobby.", msg.timestamp);
-					}
-
-					return;
-				}
-
-				if (msg.type === "chat") {
-
-					/*
-					 * The sender already displayed
-					 * their own message locally.
-					 *
-					 * If the sender ID matches this
-					 * Main.html's PeerJS ID, ignore
-					 * the relay copy.
-					 */
-
-					if (msg.senderId !== window.chatPeerId) {
-						addMessage(msg.name || "Unknown", msg.text || "", msg.timestamp);
-					}
-
-					return;
-
-				}
-
-
-				if (msg.type === "relay_event" && msg.peerEvent === "error") {
-
-					statusElement.textContent =
-						"Relay error";
-
-
-					systemMessage(
-
-						msg.detail ||
-						"Unknown relay error."
-
-					);
-
-
-					return;
-
-				}
-
+				return;
 			}
-		);
 
+			if (msg.type === "relay_event" && msg.peerEvent === "connected") {
+				relayReady = true;
+				window.chatPeerId = msg.peerId || "";
+				statusElement.textContent = "Connected";
+				sendNameToRelay();
+				systemMessage("You connected to the lobby.");
+
+				return;
+			}
+
+			if (msg.type === "relay_event" && msg.peerEvent === "user_joined") {
+				if (msg.name) {
+					systemMessage(msg.name + " joined the lobby.", msg.timestamp);
+				}
+
+				return;
+			}
+
+			if (msg.type === "relay_event" && msg.peerEvent === "user_left") {
+				if (msg.name) {
+					systemMessage(msg.name + " left the lobby.", msg.timestamp);
+				}
+
+				return;
+			}
+
+			if (msg.type === "chat") {
+				/*
+				 * The sender already displayed
+				 * their own message locally.
+				 *
+				 * If the sender ID matches this
+				 * Main.html's PeerJS ID, ignore
+				 * the relay copy.
+				 */
+
+				if (msg.senderId !== window.chatPeerId) {
+					addMessage(msg.name || "Unknown", msg.text || "", msg.timestamp);
+				}
+
+				return;
+			}
+
+			if (msg.type === "relay_event" && msg.peerEvent === "error") {
+				statusElement.textContent = "Relay error";
+				systemMessage(msg.detail || "Unknown relay error.");
+				return;
+			}
+		});
 
 		function sendChat() {
+			var text = messageInput.value.trim();
 
-			var text =
-				messageInput.value.trim();
-
-
-			if (
-				text === ""
-			) {
-
+			if (text === "") {
 				return;
-
 			}
-
 
 			if (!signalWindow || signalWindow.closed || !relayReady) {
-
 				systemMessage("Not connected yet.");
-
-
 				return;
-
 			}
-
 
 			var message = {
 				type: "chat_send",
-				room:currentRoom,
+				room: currentRoom,
 				name: myName,
 				text: text,
 				senderId: window.chatPeerId,
-				timestamp: Date.now(),
+				timestamp: Date.now()
 			};
-
 
 			/*
 			 * Display our own message immediately.
@@ -1028,18 +591,14 @@ New stuff
 
 			addMessage(myName, text, message.timestamp);
 
-
 			/*
 			 * Send to relay.
 			 */
 
 			signalWindow.postMessage(message, "*");
 
-
 			messageInput.value = "";
-
 			messageInput.focus();
-
 		}
 
 		sendButton.onclick = sendChat;
@@ -1050,66 +609,41 @@ New stuff
 			}
 		};
 
-
 		function joinLobby() {
-
 			currentRoom = "main";
-
 			relayReady = false;
-
 			statusElement.textContent = "Creating lobby...";
-
 			openRelay("create");
-
 		}
-
 
 		function enterLobby() {
 			var name = nameInput.value.trim();
 
 			if (name === "") {
-
 				nameInput.focus();
-
-
 				return;
-
 			}
-
 
 			if (hasJoined) {
-
 				return;
-
 			}
 
-
 			hasJoined = true;
-
-
 			myName = name;
 
-
 			nameScreen.style.display = "none";
-
-
 			chatScreen.style.display = "flex";
 
-
 			joinLobby();
-
 		}
 
-
 		joinButton.onclick = enterLobby;
-
 
 		nameInput.onkeydown = function(event) {
 			if (event.key === "Enter") {
 				enterLobby();
 			}
 		};
-
 	</script>
 
 </body>
