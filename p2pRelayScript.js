@@ -632,8 +632,6 @@ function createLobby() {
     });
 
     peer.on("error", function(error) {
-        clearTimeout(peerTimeout);
-
         if (error.type === "unavailable-id") {
             notifyClient(
                 "lobby_exists",
@@ -646,16 +644,12 @@ function createLobby() {
             return;
         }
 
-        setStatus("PeerJS error: " + error.type);
-
-        setLobby(
-            error.message || "PeerJS error."
-        );
-
         notifyClient(
             "error",
             null,
-            error.message || "PeerJS error."
+            error.message || "PeerJS error.",
+            "",
+            ""
         );
     });
 
