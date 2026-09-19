@@ -634,6 +634,18 @@ function createLobby() {
     peer.on("error", function(error) {
         clearTimeout(peerTimeout);
 
+        if (error.type === "unavailable-id") {
+            notifyClient(
+                "lobby_exists",
+                "joiner",
+                "",
+                "",
+                ""
+            );
+
+            return;
+        }
+
         setStatus("PeerJS error: " + error.type);
 
         setLobby(
