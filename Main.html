@@ -312,6 +312,8 @@ New stuff
 		var usersElement = document.getElementById("users");
 
 		function updateUserList(users) {
+			lobbyUsers = users.slice();
+
 			usersElement.innerHTML = "";
 
 			for (var i = 0; i < users.length; i++) {
@@ -407,6 +409,13 @@ New stuff
 		var relayReady = false;
 		var relayOpening = false;
 
+		var lobbyUsers = [];
+		var currentHostId = "";
+		var migratingHost = false;
+
+
+		var tryingToBecomeHost = false;
+		
 		function openRelay(action) {
 			if (relayOpening) {
 				return false;
@@ -461,7 +470,72 @@ New stuff
 				name: myName
 			}, "*");
 		}
+		
+		function getNextHost() {
+			var candidates = [];
 
+			for (var i = 0; i < lobbyUsers.length; i++) {
+				if (
+					lobbyUsers[i].peerId &&
+					lobbyUsers[i].peerId !== currentHostId
+				) {
+					candidates.push(lobbyUsers[i]);
+				}
+			}
+
+			if (candidates.length === 0) {
+				return null;
+			}
+
+			candidates.sort(function(a, b) {
+				return a.peerId < b.peerId ? -1 : 1;
+			});
+
+			return candidates[0];
+		}
+
+		function migrateHost() {
+			if (migratingHost) {
+				return;
+			}
+
+			migratingHost = true;
+			relayReady = false;
+
+			var nextHost = getNextHost();
+
+			if (!nextHost) {
+				statusElement.textContent = "Lobby empty.";
+				migratingHost = false;
+				return;
+			}
+
+			statusElement.textContent = "Host left. Rebuilding lobby...";
+
+			closeRelay();
+
+			setTimeout(function() {
+				if (nextHost.peerId === window.chatPeerId) {
+					statusElement.textContent = "Becoming host...";
+					tryingToBecomeHost = true;
+					openRelay("create");
+					return;
+				}
+
+				statusElement.textContent =
+					"Waiting for " +
+					nextHost.name +
+					" to become host...";
+
+				setTimeout(function() {
+					if (!migratingHost) {
+						return;
+					}
+
+					openRelay("join");
+				}, 1000);
+			}, 500);
+		}
 		window.addEventListener("message", function(event) {
 			/*
 			 * Only accept messages from
@@ -486,6 +560,16 @@ New stuff
 			}
 
 			if (msg.type === "relay_event" && msg.peerEvent === "lobby_exists") {
+				if (tryingToBecomeHost) {
+					closeRelay();
+
+					setTimeout(function() {
+						openRelay("create");
+					}, 500);
+
+					return;
+				}
+
 				statusElement.textContent = "Lobby found. Joining...";
 				closeRelay();
 
@@ -497,16 +581,13 @@ New stuff
 			}
 
 			if (msg.type === "relay_event" && msg.peerEvent === "room_created") {
-				/*
-				 * IMPORTANT:
-				 *
-				 * The host does not receive
-				 * "connected", so its PeerJS ID
-				 * must be set here.
-				 */
+				tryingToBecomeHost = false;
+				migratingHost = false;
 
 				relayReady = true;
 				window.chatPeerId = msg.peerId || "";
+				currentHostId = msg.peerId || "";
+
 				statusElement.textContent = "Connected";
 				sendNameToRelay();
 				systemMessage("You connected to the lobby.");
@@ -517,13 +598,15 @@ New stuff
 			if (msg.type === "relay_event" && msg.peerEvent === "connected") {
 				relayReady = true;
 				window.chatPeerId = msg.peerId || "";
+				currentHostId = msg.detail || "";
+
 				statusElement.textContent = "Connected";
 				sendNameToRelay();
 				systemMessage("You connected to the lobby.");
 
 				return;
 			}
-
+			
 			if (msg.type === "relay_event" && msg.peerEvent === "user_joined") {
 				if (msg.name) {
 					systemMessage(msg.name + " joined the lobby.", msg.timestamp);
@@ -536,6 +619,30 @@ New stuff
 				if (msg.name) {
 					systemMessage(msg.name + " left the lobby.", msg.timestamp);
 				}
+
+				for (var i = 0; i < lobbyUsers.length; i++) {
+					if (lobbyUsers[i].peerId === msg.peerId) {
+						lobbyUsers.splice(i, 1);
+						break;
+					}
+				}
+
+				updateUserList(lobbyUsers);
+
+				return;
+			}
+
+			if (msg.type === "relay_event" && msg.peerEvent === "host_left") {
+				currentHostId = msg.peerId || currentHostId;
+
+				if (msg.name) {
+					systemMessage(
+						msg.name + " left the lobby.",
+						msg.timestamp
+					);
+				}
+
+				migrateHost();
 
 				return;
 			}

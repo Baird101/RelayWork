@@ -1,11 +1,14 @@
 var params = new URLSearchParams(window.location.search);
 var action = params.get("action");
 var room = params.get("room");
+
 var peer = null;
 
 var connections = [];
 var hostName = "";
 var connectionIds = [];
+
+var hostPeerId = "";
 
 function setStatus(text) {
     var element = document.getElementById("status");
@@ -169,12 +172,15 @@ function setupConnection(connection) {
         updateLobbyDisplay();
 
         if (action === "join") {
+            hostPeerId = connection.peer;
+
             notifyClient(
                 "connected",
                 "joiner",
+                connection.peer,
                 "",
-                "",
-                peer.id
+                peer.id,
+                Date.now()
             );
         }
 
@@ -403,13 +409,15 @@ function setupConnection(connection) {
 
         else if (action === "join") {
             /*
-             * The joiner's connection to the host
-             * closed. Tell this Main window.
-             */
+            * This connection is the connection
+            * from this relay to the host.
+            *
+            * If it closes, the host is gone.
+            */
             notifyClient(
-                "user_left",
-                null,
-                "",
+                "host_left",
+                "joiner",
+                "The host disconnected.",
                 oldUser && oldUser.name
                     ? oldUser.name
                     : "",
@@ -578,7 +586,8 @@ function createLobby() {
 
     try {
         peer = new Peer(room);
-    } catch (error) {
+    }
+    catch (error) {
         notifyClient(
             "error",
             null,
@@ -588,9 +597,25 @@ function createLobby() {
         return;
     }
 
-    peer.on("open", function(id) {
-        setStatus("Lobby created!");
+    var peerTimeout = setTimeout(function() {
+        if (peer && !peer.open) {
+            setStatus("PeerJS connection timed out.");
+            setLobby(
+                "Could not connect to the PeerJS server."
+            );
 
+            notifyClient(
+                "error",
+                null,
+                "PeerJS connection timed out."
+            );
+        }
+    }, 10000);
+
+    peer.on("open", function(id) {
+        clearTimeout(peerTimeout);
+
+        setStatus("Lobby created!");
         setLobby(
             "Lobby: " +
             id +
@@ -606,57 +631,38 @@ function createLobby() {
         );
     });
 
-    peer.on("connection", function(connection) {
-        setupConnection(connection);
-    });
-
     peer.on("error", function(error) {
-        if (error.type === "unavailable-id") {
-            setStatus("Lobby already exists.");
+        clearTimeout(peerTimeout);
 
-            setLobby(
-                "Another relay already owns " +
-                room
-            );
+        setStatus("PeerJS error: " + error.type);
 
-            notifyClient(
-                "lobby_exists",
-                "joiner",
-                error.message || "Lobby already exists.",
-                "",
-                ""
-            );
-
-            return;
-        }
+        setLobby(
+            error.message || "PeerJS error."
+        );
 
         notifyClient(
             "error",
             null,
-            error.message || "PeerJS error.",
-            "",
-            ""
+            error.message || "PeerJS error."
         );
     });
 
     peer.on("disconnected", function() {
-        setStatus("Reconnecting to PeerJS...");
+        setStatus("Disconnected from PeerJS.");
 
         setLobby(
             "Lobby: " +
             room +
-            "\nReconnecting..."
+            "\nDisconnected."
         );
+    });
 
-        try {
-            if (peer && !peer.destroyed) {
-                peer.reconnect();
-            }
-        } catch (error) {}
+    peer.on("connection", function(connection) {
+        setupConnection(connection);
     });
 }
 
-function joinLobby() {
+function joinLobby(targetHost) {
     setStatus("Joining lobby...");
     setLobby("Connecting to " + room);
 
@@ -683,7 +689,7 @@ function joinLobby() {
         );
 
         var connection = peer.connect(
-            room,
+            targetHost || room,
             {
                 reliable: true
             }
